@@ -13,7 +13,6 @@
 
 #include "unitree_legged_sdk/unitree_legged_sdk.h"
 
-
 class RosUdpHandler
 {
 public:
@@ -41,10 +40,14 @@ public:
 protected:
     void udp_init(uint8_t level);
     void udp_start();
+    // If dryrun, do everything except udp.send(). Publish the message to send everytime in udp_send().
     void udp_send();
+    // Publish the message directly to ROS everytime in udp_recv().
     void udp_recv();
+    // Expose udp communication directly through ROS topics
     void high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg);
     void low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg);
+    // Some helper functions
     void high_state_publish();
     void low_state_publish();
     void publisher_init();
@@ -52,11 +55,11 @@ protected:
 
 public:
     RosUdpHandler(
-            const char* robot_namespace,
-            const float udp_duration,
-            uint8_t level,
+            const char* robot_namespace,                    // Every topic from this node must have a namespace as prefix.
+            const float udp_duration,                       // unit (sec), the duration to call udp related methods.
+            uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
             UNITREE_LEGGED_SDK::HighLevelType highControl,
-            bool &dryrun
+            bool &dryrun                                    // If true, does not send the udp message in udp_send() but do everything else.
         );
 };
 

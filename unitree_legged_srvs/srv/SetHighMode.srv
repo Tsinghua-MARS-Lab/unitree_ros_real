@@ -1,0 +1,19 @@
+#request constants
+uint8 IDLE=0
+uint8 STAND=1
+uint8 VEL_WALK=2
+uint8 POS_WALK=3
+uint8 PATH_WALK=4
+uint8 POS_DOWN=5
+uint8 POS_UP=6
+uint8 DAMPING=7
+uint8 RECOVERY=8
+uint8 BACKFLIP=9
+uint8 JUMP_YAW=10
+uint8 STRAIGHT_HAND=11
+uint8 DANCE1=12
+uint8 DANCE2=13
+#request fields
+uint8 mode
+---
+bool success

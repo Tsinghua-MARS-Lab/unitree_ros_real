@@ -1,0 +1,9 @@
+#request constants
+uint8 IDLE=0
+uint8 TROT=1
+uint8 TROT_RUN=2
+uint8 CLIMB_STAIR=3
+#request fields
+uint8 gait_type
+---
+bool success
