@@ -14,7 +14,7 @@ add_message_files(
   MotorState.msg
   Cartesian.msg
   IMU.msg
-  Led.msg
+  LED.msg
   LowCmd.msg
   LowState.msg
   HighCmd.msg

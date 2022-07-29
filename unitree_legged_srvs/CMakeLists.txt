@@ -8,7 +8,11 @@ project(unitree_legged_srvs)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  rospy
+  std_msgs
   std_srvs
+  message_generation
 )
 
 ## Generate services in the 'srv' folder
@@ -26,10 +30,10 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -62,8 +66,8 @@ add_service_files(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES unitree_legged_srvs
-  CATKIN_DEPENDS std_srvs
+  # LIBRARIES unitree_legged_srvs
+  CATKIN_DEPENDS message_runtime std_srvs
 #  DEPENDS system_lib
 )
 
@@ -73,10 +77,10 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
+# include_directories(
 # include
-  ${catkin_INCLUDE_DIRS}
-)
+  # ${catkin_INCLUDE_DIRS}
+# )
 
 
 install(
