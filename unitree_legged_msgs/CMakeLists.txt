@@ -15,6 +15,7 @@ add_message_files(
   Cartesian.msg
   IMU.msg
   LED.msg
+  LegsCmd.msg
   LowCmd.msg
   LowState.msg
   HighCmd.msg

@@ -8,17 +8,6 @@
  * @copyright Copyright (c) 2022
  * 
  */
-#include <iostream>
-#include <ros/ros.h>
-#include <ros/console.h>
-#include <unitree_legged_msgs/HighCmd.h>
-#include <unitree_legged_msgs/HighState.h>
-#include <unitree_legged_msgs/LowCmd.h>
-#include <unitree_legged_msgs/LowState.h>
-#include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
-
-#include "convert.h"
 #include "ros_udp_node.h"
 
 void RosUdpHandler::udp_init(uint8_t level)
@@ -46,7 +35,9 @@ void RosUdpHandler::udp_send()
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         // Set to udp buffer after protection
-
+        this->safe.PositionLimit(this->low_cmd_buffer);
+        this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer);
+        this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, 1);
         this->udp.SetSend(this->low_cmd_buffer);
     }
     if (!this->dryrun_)
@@ -125,18 +116,20 @@ void RosUdpHandler::subscriber_init()
 }
 
 RosUdpHandler::RosUdpHandler(
-        const char* robot_namespace,
-        const float udp_duration,
-        uint8_t level,
-        UNITREE_LEGGED_SDK::HighLevelType highControl,
-        bool &dryrun
-    ):
+    const char* robot_namespace,
+    const float udp_duration,
+    uint8_t level,
+    UNITREE_LEGGED_SDK::HighLevelType highControl,
+    int power_protect_level,
+    bool &dryrun
+):
     robot_namespace_(robot_namespace),
     udp_duration_(udp_duration),
     ctrl_level(level),
     dryrun_(dryrun),
     udp(level, highControl),
     safe(UNITREE_LEGGED_SDK::LeggedType::A1),
+    low_power_protect_level(power_protect_level),
     loop_udp_send("udp_send", udp_duration, 3, boost::bind(&RosUdpHandler::udp_send, this)),
     loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this))
 {
@@ -169,6 +162,7 @@ int main(int argc, char **argv)
         udp_duration,
         UNITREE_LEGGED_SDK::HIGHLEVEL,
         UNITREE_LEGGED_SDK::HighLevelType::Basic,
+        1,
         dryrun
     );
     ros::spin();

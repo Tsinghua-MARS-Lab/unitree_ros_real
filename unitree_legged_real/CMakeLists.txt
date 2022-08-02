@@ -32,6 +32,11 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/unitree_legged_sdk/include
 )
 
+add_library(unitree_ros SHARED)
+target_sources(
+  unitree_ros PRIVATE
+  src/ros_udp_node.cpp
+)
 
 
 link_directories(${CMAKE_SOURCE_DIR}/unitree_legged_sdk/lib)
@@ -40,6 +45,10 @@ link_directories(${CMAKE_SOURCE_DIR}/unitree_legged_sdk/lib)
 add_executable(ros_udp_node src/ros_udp_node.cpp)
 target_link_libraries(ros_udp_node ${EXTRA_LIBS} ${catkin_LIBRARIES})
 add_dependencies(ros_udp_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(real_robot src/real_robot.cpp)
+target_link_libraries(real_robot ${EXTRA_LIBS} ${catkin_LIBRARIES} unitree_ros)
+add_dependencies(real_robot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # add_executable(example_walk src/exe/example_walk.cpp)
 # target_link_libraries(example_walk ${EXTRA_LIBS} ${catkin_LIBRARIES})

@@ -11,7 +11,18 @@
 #ifndef _UNITREE_ROS_UDP_NODE_H_
 #define _UNITREE_ROS_UDP_NODE_H_
 
+#include <iostream>
+#include <ros/ros.h>
+#include <ros/console.h>
+#include <unitree_legged_msgs/HighCmd.h>
+#include <unitree_legged_msgs/HighState.h>
+#include <unitree_legged_msgs/LowCmd.h>
+#include <unitree_legged_msgs/LowState.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
+
 #include "unitree_legged_sdk/unitree_legged_sdk.h"
+#include "convert.h"
 
 class RosUdpHandler
 {
@@ -25,6 +36,7 @@ public:
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
     
     UNITREE_LEGGED_SDK::Safety safe;
+    int low_power_protect_level;
 
     UNITREE_LEGGED_SDK::HighCmd high_cmd_buffer = {0};
     UNITREE_LEGGED_SDK::HighState high_state_buffer = {0};
@@ -59,6 +71,7 @@ public:
             const float udp_duration,                       // unit (sec), the duration to call udp related methods.
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
             UNITREE_LEGGED_SDK::HighLevelType highControl,
+            int power_protect_level,                        // Refer to unitree_legged_sdk/safety.h
             bool &dryrun                                    // If true, does not send the udp message in udp_send() but do everything else.
         );
 };

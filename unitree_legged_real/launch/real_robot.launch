@@ -1,0 +1,8 @@
+<launch>
+    <!-- For the testing safety, do dryrun by default -->
+    <arg name="dryrun" type="str" default="true"/>
+    <arg name="robot_namespace" type="str" default="/a112138"/>
+    <arg name="udp_duration" type="str" default="0.002"/>
+
+    <node name="real_robot" pkg="unitree_legged_real" type="real_robot" args="$(arg dryrun) $(arg robot_namespace) $(arg udp_duration)"/>
+</launch>
