@@ -20,6 +20,7 @@ add_service_files(
   FILES
   SetGaitType.srv
   SetHighMode.srv
+  SetSpeedLevel.srv
 )
 
 ## Generate actions in the 'action' folder
