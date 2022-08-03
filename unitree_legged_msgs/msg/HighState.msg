@@ -2,8 +2,12 @@
 uint8 levelFlag
 uint16 commVersion
 
+uint16 robotID
 uint32 SN
 uint8 bandWidth
+uint8 mode
+float32 progress
+
 IMU imu
 uint8 gaitType		   
 float32 footRaiseHeight		  
@@ -16,7 +20,6 @@ Cartesian[4] footSpeed2Body
 int16[4] footForce
 int16[4] footForceEst
 uint8[40] wirelessRemote
-float32[4] rangeObstacle
 uint32 reserve
 
 uint32 crc

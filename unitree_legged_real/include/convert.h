@@ -15,45 +15,181 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 
-/** ROS message to UDP cmd **/
-
-template<class Cmd_T, class Msg_T>
-void rosMsg2Cmd(Cmd_T *dst, Msg_T *src)
+unitree_legged_msgs::Cartesian state2rosMsg(UNITREE_LEGGED_SDK::Cartesian &state)
 {
-    memcpy(dst, src, sizeof(Msg_T));
+    unitree_legged_msgs::Cartesian ros_msg;
+
+    ros_msg.x = state.x;
+    ros_msg.y = state.y;
+    ros_msg.z = state.z;
+
+    return ros_msg;
 }
 
-// UNITREE_LEGGED_SDK::HighCmd rosMsg2Cmd(const unitree_legged_msgs::HighCmd::ConstPtr &msg)
-// {
-//     UNITREE_LEGGED_SDK::HighCmd cmd;
-
-//     cmd.levelFlag = msg->levelFlag;
-//     cmd.commVersion = msg->commVersion;
-//     cmd.robotID = msg->robotID;
-//     cmd.SN = msg->SN;
-//     cmd.bandWidth = msg->bandWidth;
-//     cmd.mode = msg->mode;
-//     cmd.gaitType = msg->gaitType;
-//     cmd.speedLevel = msg->speedLevel;
-//     cmd.footRaiseHeight = msg->footRaiseHeight;
-//     cmd.bodyHeight = msg->bodyHeight;
-//     for (int i = 0; i < 2; i++) cmd.postion[i] = msg->postion[i];
-//     for (int i = 0; i < 3; i++) cmd.euler[i] = msg->euler[i];
-//     cmd.yawSpeed = msg->yawSpeed;
-//     for (int i = 0; i < 4; i++) cmd.led[i] = msg->led[i];
-//     memcpy(cmd.wirelessRemote, msg->wirelessRemote, sizeof(uint8_t) * 40);
-//     cmd.reserve = msg->reserve;
-//     cmc.crc = msg->crc;
-
-//     return cmd;
-// }
-
-/** UDP states to ROS message **/
-
-template<class Msg_T, class State_T>
-void state2rosMsg(Msg_T *dst, State_T *src)
+unitree_legged_msgs::IMU state2rosMsg(UNITREE_LEGGED_SDK::IMU &state)
 {
-    memcpy(dst, src, sizeof(State_T));
+    unitree_legged_msgs::IMU ros_msg;
+
+    for (int i(0); i < 4; i++) ros_msg.quaternion[i] = state.quaternion[i];
+
+    for (int i(0); i < 3; i++)
+    {
+        ros_msg.gyroscope[i] = state.gyroscope[i];
+        ros_msg.accelerometer[i] = state.accelerometer[i];
+        ros_msg.rpy[i] = state.rpy[i];
+    }
+
+    ros_msg.temperature = state.temperature;
+
+    return ros_msg;
+}
+unitree_legged_msgs::MotorState state2rosMsg(UNITREE_LEGGED_SDK::MotorState &state)
+{
+    unitree_legged_msgs::MotorState ros_msg;
+
+    ros_msg.mode = state.mode;
+    ros_msg.q = state.q;
+    ros_msg.dq = state.dq;
+    ros_msg.ddq = state.ddq;
+    ros_msg.tauEst = state.tauEst;
+    ros_msg.q_raw = state.q_raw;
+    ros_msg.dq_raw = state.dq_raw;
+    ros_msg.ddq_raw = state.ddq_raw;
+    ros_msg.temperature = state.temperature;
+
+    ros_msg.reserve[0] = state.reserve[0];
+    ros_msg.reserve[1] = state.reserve[1];
+
+    return ros_msg;
+}
+
+UNITREE_LEGGED_SDK::MotorCmd rosMsg2Cmd(const unitree_legged_msgs::MotorCmd &msg)
+{
+    UNITREE_LEGGED_SDK::MotorCmd cmd;
+
+    cmd.mode = msg.mode;
+    cmd.q = msg.q;
+    cmd.dq = msg.dq;
+    cmd.tau = msg.tau;
+    cmd.Kp = msg.Kp;
+    cmd.Kd = msg.Kd;
+
+    for (int i(0); i < 3; i++) cmd.reserve[i] = msg.reserve[i];
+    return cmd;
+}
+
+unitree_legged_msgs::LowState state2rosMsg(UNITREE_LEGGED_SDK::LowState &state)
+{
+    unitree_legged_msgs::LowState ros_msg;
+
+    ros_msg.levelFlag = state.levelFlag;
+    ros_msg.commVersion = state.commVersion;
+    
+    ros_msg.robotID = state.robotID;
+    ros_msg.SN = state.SN;
+    ros_msg.bandWidth = state.bandWidth;
+    ros_msg.imu = state2rosMsg(state.imu);
+    for (int i(0); i < 20; i++) ros_msg.motorState[i] = state2rosMsg(state.motorState[i]);
+    for (int i(0); i < 4; i++) ros_msg.footForce[i] = state.footForce[i];
+    for (int i(0); i < 4; i++) ros_msg.footForceEst[i] = state.footForceEst[i];
+    ros_msg.tick = state.tick;
+    for (int i(0); i < 40; i++) ros_msg.wirelessRemote[i] = state.wirelessRemote[i]; 
+    ros_msg.reserve = state.reserve;
+
+    ros_msg.crc = state.crc;
+
+    return ros_msg;
+}
+
+UNITREE_LEGGED_SDK::LowCmd rosMsg2Cmd(const unitree_legged_msgs::LowCmd::ConstPtr &msg)
+{
+    UNITREE_LEGGED_SDK::LowCmd cmd;
+
+    cmd.levelFlag = msg->levelFlag;
+    cmd.commVersion = msg->commVersion;
+    
+    cmd.robotID = msg->robotID;
+    cmd.SN = msg->SN;
+    cmd.bandWidth = msg->bandWidth;
+    for (int i(0); i < 20; i++) cmd.motorCmd[i] = rosMsg2Cmd(msg->motorCmd[i]);
+    for (int i(0); i < 4; i++)
+    {
+        cmd.led[i].r = msg->led[i].r;
+        cmd.led[i].g = msg->led[i].g;
+        cmd.led[i].b = msg->led[i].b;
+    }
+    for (int i(0); i < 40; i++) cmd.wirelessRemote[i] = msg->wirelessRemote[i];
+    cmd.reserve = msg->reserve;
+
+    cmd.crc = msg->crc;
+
+    return cmd;
+}
+
+unitree_legged_msgs::HighState state2rosMsg(UNITREE_LEGGED_SDK::HighState &state)
+{
+    unitree_legged_msgs::HighState ros_msg;
+
+    ros_msg.levelFlag = state.levelFlag;
+    ros_msg.commVersion = state.commVersion;
+    
+    ros_msg.robotID = state.robotID;
+    ros_msg.SN = state.SN;
+    ros_msg.bandWidth = state.bandWidth;
+    ros_msg.mode = state.mode;
+    ros_msg.progress = state.progress;
+
+    ros_msg.imu = state2rosMsg(state.imu);
+    ros_msg.gaitType = state.gaitType;
+    ros_msg.footRaiseHeight = state.footRaiseHeight;
+    for (int i(0); i < 3; i++) ros_msg.position[i] = state.position[i];
+    ros_msg.bodyHeight = state.bodyHeight;
+    for (int i(0); i < 3; i++) ros_msg.velocity[i] = state.velocity[i];
+    ros_msg.yawSpeed = state.yawSpeed;
+
+    for (int i(0); i < 4; i++) ros_msg.footPosition2Body[i] = state2rosMsg(state.footPosition2Body[i]);
+    for (int i(0); i < 4; i++) ros_msg.footSpeed2Body[i] = state2rosMsg(state.footSpeed2Body[i]);
+    for (int i(0); i < 4; i++) ros_msg.footForce[i] = state.footForce[i];
+    for (int i(0); i < 4; i++) ros_msg.footForceEst[i] = state.footForceEst[i];
+    for (int i(0); i < 40; i++) ros_msg.wirelessRemote[i] = state.wirelessRemote[i];
+    ros_msg.reserve = state.reserve;
+
+    ros_msg.crc = state.crc;
+
+    return ros_msg;
+}
+
+UNITREE_LEGGED_SDK::HighCmd rosMsg2Cmd(const unitree_legged_msgs::HighCmd::ConstPtr &msg)
+{
+    UNITREE_LEGGED_SDK::HighCmd cmd;
+
+    cmd.levelFlag = msg->levelFlag;
+    cmd.commVersion = msg->commVersion;
+    cmd.robotID = msg->robotID;
+
+    cmd.SN = msg->SN;
+    cmd.bandWidth = msg->bandWidth;
+    cmd.mode = msg->mode;
+
+    cmd.gaitType = msg->gaitType;
+    cmd.speedLevel = msg->speedLevel;
+    cmd.footRaiseHeight = msg->footRaiseHeight;
+    cmd.bodyHeight = msg->bodyHeight;
+    for (int i(0); i < 2; i++) cmd.postion[i] = msg->position[i];
+    for (int i(0); i < 3; i++) cmd.euler[i] = msg->euler[i];
+    cmd.yawSpeed = msg->yawSpeed;
+    for (int i(0); i < 4; i++)
+    {
+        cmd.led[i].r = msg->led[i].r;
+        cmd.led[i].g = msg->led[i].g;
+        cmd.led[i].b = msg->led[i].b;
+    }
+    for (int i(0); i < 40; i++) cmd.wirelessRemote[i] = msg->wirelessRemote[i];
+    cmd.reserve = msg->reserve;
+
+    cmd.crc = msg->crc;
+
+    return cmd;
 }
 
 #endif

@@ -6,6 +6,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     geometry_msgs
+    sensor_msgs
     unitree_legged_msgs
 )
 

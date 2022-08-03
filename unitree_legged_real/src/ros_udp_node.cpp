@@ -61,26 +61,24 @@ void RosUdpHandler::udp_recv()
 
 void RosUdpHandler::high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg)
 {
-    rosMsg2Cmd(&this->high_cmd_buffer, &msg);
+    this->high_cmd_buffer = rosMsg2Cmd(msg);
 }
 
 void RosUdpHandler::low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg)
 {
-    rosMsg2Cmd(&this->low_cmd_buffer, &msg);
+    this->low_cmd_buffer = rosMsg2Cmd(msg);
 }
 
 void RosUdpHandler::high_state_publish()
 {
-    unitree_legged_msgs::LowState low_state_msg;
-    state2rosMsg(&low_state_msg, &this->high_state_buffer);
-    this->state_publisher.publish(low_state_msg);
+    unitree_legged_msgs::HighState ros_msg = state2rosMsg(this->high_state_buffer);
+    this->state_publisher.publish(ros_msg);
 }
 
 void RosUdpHandler::low_state_publish()
 {
-    unitree_legged_msgs::LowState low_state_msg;
-    state2rosMsg(&low_state_msg, &this->low_state_buffer);
-    this->state_publisher.publish(low_state_msg);
+    unitree_legged_msgs::LowState ros_msg = state2rosMsg(this->low_state_buffer);
+    this->state_publisher.publish(ros_msg);
 }
 
 void RosUdpHandler::publisher_init()
@@ -109,10 +107,18 @@ void RosUdpHandler::subscriber_init()
 {
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
         this->cmd_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/high_cmd", 10, &RosUdpHandler::high_cmd_callback, this);
+            this->robot_namespace_ + "/high_cmd",
+            10,
+            &RosUdpHandler::high_cmd_callback,
+            this
+        );
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
         this->cmd_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/low_cmd", 10, &RosUdpHandler::low_cmd_callback, this);
+            this->robot_namespace_ + "/low_cmd",
+            10,
+            &RosUdpHandler::low_cmd_callback,
+            this
+        );
 }
 
 RosUdpHandler::RosUdpHandler(
