@@ -63,6 +63,7 @@ public:
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
             UNITREE_LEGGED_SDK::HighLevelType highControl,
             int power_protect_level,
+            bool cmd_check,
             bool &dryrun                                    // If true, does not send the udp message in udp_send() but do everything else.
         );
     void publisher_init();

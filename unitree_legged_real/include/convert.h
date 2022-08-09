@@ -78,6 +78,22 @@ UNITREE_LEGGED_SDK::MotorCmd rosMsg2Cmd(const unitree_legged_msgs::MotorCmd &msg
     return cmd;
 }
 
+unitree_legged_msgs::MotorCmd Cmd2rosMsg(const UNITREE_LEGGED_SDK::MotorCmd* cmd)
+{
+    unitree_legged_msgs::MotorCmd ros_msg;
+
+    ros_msg.mode = cmd->mode;
+    ros_msg.q = cmd->q;
+    ros_msg.dq = cmd->dq;
+    ros_msg.tau = cmd->tau;
+    ros_msg.Kp = cmd->Kp;
+    ros_msg.Kd = cmd->Kd;
+
+    for (int i(0); i < 3; i++) ros_msg.reserve[i] = cmd->reserve[i];
+
+    return ros_msg;
+}
+
 unitree_legged_msgs::LowState state2rosMsg(UNITREE_LEGGED_SDK::LowState &state)
 {
     unitree_legged_msgs::LowState ros_msg;
@@ -124,6 +140,31 @@ UNITREE_LEGGED_SDK::LowCmd rosMsg2Cmd(const unitree_legged_msgs::LowCmd::ConstPt
     cmd.crc = msg->crc;
 
     return cmd;
+}
+
+unitree_legged_msgs::LowCmd Cmd2rosMsg(const UNITREE_LEGGED_SDK::LowCmd *cmd)
+{
+    unitree_legged_msgs::LowCmd ros_msg;
+
+    ros_msg.levelFlag = cmd->levelFlag;
+    ros_msg.commVersion = cmd->commVersion;
+    
+    ros_msg.robotID = cmd->robotID;
+    ros_msg.SN = cmd->SN;
+    ros_msg.bandWidth = cmd->bandWidth;
+    for (int i(0); i < 20; i++) ros_msg.motorCmd[i] = Cmd2rosMsg(&cmd->motorCmd[i]);
+    for (int i(0); i < 4; i++)
+    {
+        ros_msg.led[i].r = cmd->led[i].r;
+        ros_msg.led[i].g = cmd->led[i].g;
+        ros_msg.led[i].b = cmd->led[i].b;
+    }
+    for (int i(0); i < 40; i++) ros_msg.wirelessRemote[i] = cmd->wirelessRemote[i];
+    ros_msg.reserve = cmd->reserve;
+
+    ros_msg.crc = cmd->crc;
+
+    return ros_msg;
 }
 
 unitree_legged_msgs::HighState state2rosMsg(UNITREE_LEGGED_SDK::HighState &state)
@@ -190,6 +231,39 @@ UNITREE_LEGGED_SDK::HighCmd rosMsg2Cmd(const unitree_legged_msgs::HighCmd::Const
     cmd.crc = msg->crc;
 
     return cmd;
+}
+
+unitree_legged_msgs::HighCmd Cmd2rosMsg(const UNITREE_LEGGED_SDK::HighCmd* cmd)
+{
+    unitree_legged_msgs::HighCmd ros_msg;
+
+    ros_msg.levelFlag = cmd->levelFlag;
+    ros_msg.commVersion = cmd->commVersion;
+    ros_msg.robotID = cmd->robotID;
+
+    ros_msg.SN = cmd->SN;
+    ros_msg.bandWidth = cmd->bandWidth;
+    ros_msg.mode = cmd->mode;
+
+    ros_msg.gaitType = cmd->gaitType;
+    ros_msg.speedLevel = cmd->speedLevel;
+    ros_msg.footRaiseHeight = cmd->footRaiseHeight;
+    ros_msg.bodyHeight = cmd->bodyHeight;
+    for (int i(0); i < 2; i++) ros_msg.position[i] = cmd->postion[i];
+    for (int i(0); i < 3; i++) ros_msg.euler[i] = cmd->euler[i];
+    ros_msg.yawSpeed = cmd->yawSpeed;
+    for (int i(0); i < 4; i++)
+    {
+        ros_msg.led[i].r = cmd->led[i].r;
+        ros_msg.led[i].g = cmd->led[i].g;
+        ros_msg.led[i].b = cmd->led[i].b;
+    }
+    for (int i(0); i < 40; i++) ros_msg.wirelessRemote[i] = cmd->wirelessRemote[i];
+    ros_msg.reserve = cmd->reserve;
+
+    ros_msg.crc = cmd->crc;
+
+    return ros_msg;
 }
 
 #endif

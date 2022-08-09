@@ -32,6 +32,7 @@ public:
     bool dryrun_;
     UNITREE_LEGGED_SDK::UDP udp;
     float udp_duration_;
+    bool cmd_check; // if set, /*_cmd_checker publisher will publish the from buffer at each udpSend()
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_send;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
     
@@ -72,6 +73,7 @@ public:
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
             UNITREE_LEGGED_SDK::HighLevelType highControl,
             int power_protect_level,                        // Refer to unitree_legged_sdk/safety.h
+            bool cmd_check,
             bool &dryrun                                    // If true, does not send the udp message in udp_send() but do everything else.
         );
 };

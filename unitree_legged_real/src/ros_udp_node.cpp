@@ -31,13 +31,26 @@ void RosUdpHandler::udp_start()
 void RosUdpHandler::udp_send()
 {
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
+    {
         this->udp.SetSend(this->high_cmd_buffer);
+        if (this->cmd_check)
+        {
+            unitree_legged_msgs::HighCmd ros_msg = Cmd2rosMsg(&this->high_cmd_buffer);
+            this->cmd_checker.publish(ros_msg);
+        }
+    }
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         // Set to udp buffer after protection
         this->safe.PositionLimit(this->low_cmd_buffer);
         this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer);
-        this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, 1);
+        this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->low_power_protect_level);
+        // Publish cmd_check if needed
+        if (this->cmd_check)
+        {
+            unitree_legged_msgs::LowCmd ros_msg = Cmd2rosMsg(&this->low_cmd_buffer);
+            this->cmd_checker.publish(ros_msg);
+        }
         this->udp.SetSend(this->low_cmd_buffer);
     }
     if (!this->dryrun_)
@@ -88,18 +101,20 @@ void RosUdpHandler::publisher_init()
         this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::HighState>(
             this->robot_namespace_ + "/high_state", 1
         );
-        this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::HighState>(
-            this->robot_namespace_ + "/high_cmd_check", 1
-        );
+        if (this->cmd_check)
+            this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::HighCmd>(
+                this->robot_namespace_ + "/high_cmd_check", 1
+            );
     }
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::LowState>(
             this->robot_namespace_ + "/low_state", 1
         );
-        this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::HighState>(
-            this->robot_namespace_ + "/low_cmd_check", 1
-        );
+        if (this->cmd_check)
+            this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::HighCmd>(
+                this->robot_namespace_ + "/low_cmd_check", 1
+            );
     }
 }
 
@@ -127,11 +142,13 @@ RosUdpHandler::RosUdpHandler(
     uint8_t level,
     UNITREE_LEGGED_SDK::HighLevelType highControl,
     int power_protect_level,
+    bool cmd_check,
     bool &dryrun
 ):
     robot_namespace_(robot_namespace),
     udp_duration_(udp_duration),
     ctrl_level(level),
+    cmd_check(cmd_check),
     dryrun_(dryrun),
     udp(level, highControl),
     safe(UNITREE_LEGGED_SDK::LeggedType::A1),
@@ -148,10 +165,11 @@ RosUdpHandler::RosUdpHandler(
 
 int main(int argc, char **argv)
 {
-    if (argc != 4)
+    if (argc != (4 + 3))
     {
-        std::cout << "You must provide exactly 3 keyword arguments, please use roslaunch rather than rosrun.";
+        std::cout << "You must provide exactly 4 keyword arguments rather than " << argc << ", please use roslaunch rather than rosrun.";
         std::cout << std::endl;
+        for (int i = 0; i < argc; i++) std::cout << argv[i] << std::endl;
         exit(-1);
     }
 
@@ -160,6 +178,7 @@ int main(int argc, char **argv)
     const char* robot_namespace = argv[2];
     std::string udp_duration_s (argv[3]);
     float udp_duration = std::stof(udp_duration_s);
+    bool cmd_check = strcasecmp(argv[4], "true");
 
     // construct and initialize this ros node
     ros::init(argc, argv, robot_namespace);
@@ -169,6 +188,7 @@ int main(int argc, char **argv)
         UNITREE_LEGGED_SDK::HIGHLEVEL,
         UNITREE_LEGGED_SDK::HighLevelType::Basic,
         1,
+        cmd_check,
         dryrun
     );
     ros::spin();
