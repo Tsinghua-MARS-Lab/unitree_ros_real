@@ -130,7 +130,7 @@ UnitreeRos::UnitreeRos(
     UNITREE_LEGGED_SDK::HighLevelType highControl,
     int power_protect_level,
     bool cmd_check,
-    bool &dryrun
+    bool dryrun
 ):
     RosUdpHandler(robot_namespace, udp_duration, level, highControl, power_protect_level, cmd_check, dryrun)
 {

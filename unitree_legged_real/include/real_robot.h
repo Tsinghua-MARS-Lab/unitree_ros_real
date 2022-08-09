@@ -64,7 +64,7 @@ public:
             UNITREE_LEGGED_SDK::HighLevelType highControl,
             int power_protect_level,
             bool cmd_check,
-            bool &dryrun                                    // If true, does not send the udp message in udp_send() but do everything else.
+            bool dryrun                                     // If true, does not send the udp message in udp_send() but do everything else.
         );
     void publisher_init();
     void server_init();

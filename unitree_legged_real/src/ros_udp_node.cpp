@@ -59,7 +59,8 @@ void RosUdpHandler::udp_send()
 
 void RosUdpHandler::udp_recv()
 {
-    this->udp.Recv();
+    int recv_result = this->udp.Recv();
+    if (recv_result < 0) ROS_ERROR_DELAYED_THROTTLE(0.1, "udp_recv error");
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->udp.GetRecv(this->high_state_buffer);
@@ -143,7 +144,7 @@ RosUdpHandler::RosUdpHandler(
     UNITREE_LEGGED_SDK::HighLevelType highControl,
     int power_protect_level,
     bool cmd_check,
-    bool &dryrun
+    bool dryrun
 ):
     robot_namespace_(robot_namespace),
     udp_duration_(udp_duration),
