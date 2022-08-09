@@ -5,5 +5,5 @@
     <arg name="udp_duration" default="0.002"/>
     <arg name="cmd_check" default="true"/>
 
-    <node name="real_robot" pkg="unitree_legged_real" type="real_robot" args="$(arg dryrun) $(arg robot_namespace) $(arg udp_duration) $(arg cmd_check)"/>
+    <node name="unitree_robot" pkg="unitree_legged_real" type="real_robot" args="$(arg dryrun) $(arg robot_namespace) $(arg udp_duration) $(arg cmd_check)"/>
 </launch>
