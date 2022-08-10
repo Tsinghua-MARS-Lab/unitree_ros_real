@@ -20,6 +20,9 @@ add_message_files(
   LowState.msg
   HighCmd.msg
   HighState.msg
+  RemoteComponents.msg
+  RemoteSwitch.msg
+  WirelessRemote.msg
 )
 
 generate_messages(

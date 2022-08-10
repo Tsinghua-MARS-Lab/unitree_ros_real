@@ -192,25 +192,27 @@ RosUdpHandler::RosUdpHandler(
     ctrl_level(level),
     cmd_check(cmd_check),
     dryrun_(dryrun),
-    // udp(level, highControl),
+    udp(level),
     safe(UNITREE_LEGGED_SDK::LeggedType::A1),
     low_power_protect_level(power_protect_level),
     loop_udp_send("udp_send", udp_duration, 3, boost::bind(&RosUdpHandler::udp_send, this)),
     loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this))
 {
-    if (level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->udp = UNITREE_LEGGED_SDK::UDP(
-            8090,
-            "192.168.123.161",
-            8082,
-            sizeof(UNITREE_LEGGED_SDK::HighCmd),
-            sizeof(UNITREE_LEGGED_SDK::HighState)
-        );
-    } else if (level == UNITREE_LEGGED_SDK::LOWLEVEL)
-    {
-        this->udp = UNITREE_LEGGED_SDK::UDP(level);
-    }
+    // if (level == UNITREE_LEGGED_SDK::HIGHLEVEL)
+    // {
+    //     ROS_INFO_ONCE("Setting up UDP with HIGHLEVEL control");
+    //     this->udp = UNITREE_LEGGED_SDK::UDP(
+    //         8080,
+    //         "192.168.123.161",
+    //         8082,
+    //         sizeof(UNITREE_LEGGED_SDK::HighCmd),
+    //         sizeof(UNITREE_LEGGED_SDK::HighState)
+    //     );
+    // } else if (level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    // {
+    //     ROS_INFO_ONCE("Setting up UDP with LOWLEVEL control");
+    //     this->udp = UNITREE_LEGGED_SDK::UDP(level);
+    // }
     this->udp_init(level);
     this->publisher_init();
     this->subscriber_init();

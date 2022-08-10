@@ -14,24 +14,33 @@
 #include "sensor_msgs/Imu.h"
 #include "std_msgs/Float32.h"
 #include <unitree_legged_msgs/LegsCmd.h>
+#include <unitree_legged_msgs/WirelessRemote.h>
 #include <unitree_legged_srvs/SetGaitType.h>
 #include <unitree_legged_srvs/SetHighMode.h>
 #include <unitree_legged_srvs/SetSpeedLevel.h>
+#include "unitree_legged_sdk/unitree_joystick.h"
 
 class UnitreeRos: public RosUdpHandler
 {
 public:
     int state_check_times_max = 50; // When changing mode through UDP, the service handler checks the updated state at most this times
     int state_check_freq = 10; // The frequency of checking mode update.
+    int timer_freq = 50; // default timer frequency for some default functions.
     
     ros::Publisher pose_estimation_publisher;
+    ros::Publisher wirelessRemote_publisher;
 
     ros::ServiceServer set_gaitType_service;
+    ros::ServiceServer high_mode_service;
+    ros::ServiceServer high_speedLevel_service;
+
     ros::Subscriber high_twist_subscriber;
     ros::Subscriber foot_raise_height_subscriber;
     ros::Subscriber body_height_subscriber;
 
     ros::Subscriber low_motor_subscriber;
+
+    ros::WallTimer wirelessRemote_publish_timer;
 
 protected:
     // For simplicity, some states and commands must be processed and estimate
@@ -56,6 +65,8 @@ protected:
 
     void low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr &msg);
     
+    void wirelessRemote_publish_callback(const ros::WallTimerEvent& event);
+
 public:
     UnitreeRos(
             const char* robot_namespace,                    // Every topic from this node must have a namespace as prefix.
@@ -68,4 +79,5 @@ public:
     void publisher_init();
     void server_init();
     void subscriber_init();
+    void timer_init();
 };

@@ -1,0 +1,16 @@
+uint8 R1
+uint8 L1
+uint8 start
+uint8 select
+uint8 R2
+uint8 L2
+uint8 F1
+uint8 F2
+uint8 A
+uint8 B
+uint8 X
+uint8 Y
+uint8 up
+uint8 right
+uint8 down
+uint8 left

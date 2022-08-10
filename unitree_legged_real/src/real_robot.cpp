@@ -123,6 +123,45 @@ void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr
     }
 }
 
+void UnitreeRos::wirelessRemote_publish_callback(const ros::WallTimerEvent& event)
+{
+    unitree_legged_msgs::WirelessRemote ros_msg;
+    xRockerBtnDataStruct _keyData;
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
+        memcpy(&_keyData, this->high_cmd_buffer.wirelessRemote, 40);
+    else
+        memcpy(&_keyData, this->low_cmd_buffer.wirelessRemote, 40);
+    
+    // transfer data from the struct to ros message
+    for (int i (0); i < 2; i++) ros_msg.head[i] = _keyData.head[i];
+    ros_msg.btn.components.R1 = _keyData.btn.components.R1;
+    ros_msg.btn.components.L1 = _keyData.btn.components.L1;
+    ros_msg.btn.components.start = _keyData.btn.components.start;
+    ros_msg.btn.components.select = _keyData.btn.components.select;
+    ros_msg.btn.components.R2 = _keyData.btn.components.R2;
+    ros_msg.btn.components.L2 = _keyData.btn.components.L2;
+    ros_msg.btn.components.F1 = _keyData.btn.components.F1;
+    ros_msg.btn.components.F2 = _keyData.btn.components.F2;
+    ros_msg.btn.components.A = _keyData.btn.components.A;
+    ros_msg.btn.components.B = _keyData.btn.components.B;
+    ros_msg.btn.components.X = _keyData.btn.components.X;
+    ros_msg.btn.components.Y = _keyData.btn.components.Y;
+    ros_msg.btn.components.up = _keyData.btn.components.up;
+    ros_msg.btn.components.right = _keyData.btn.components.right;
+    ros_msg.btn.components.down = _keyData.btn.components.down;
+    ros_msg.btn.components.left = _keyData.btn.components.left;
+    ros_msg.btn.value = _keyData.btn.value;
+    ros_msg.lx = _keyData.lx;
+    ros_msg.rx = _keyData.rx;
+    ros_msg.ry = _keyData.ry;
+    ros_msg.L2 = _keyData.L2;
+    ros_msg.ly = _keyData.ly;
+    for (int i (0); i < 16; i++) ros_msg.idle[i] = _keyData.idle[i];
+
+    // publish the message
+    this->wirelessRemote_publisher.publish(ros_msg);
+}
+
 UnitreeRos::UnitreeRos(
     const char* robot_namespace,
     const float udp_duration,
@@ -149,6 +188,9 @@ void UnitreeRos::publisher_init()
             this->robot_namespace_ + "/imu_estimated", 1
         );
     }
+    this->wirelessRemote_publisher = this->ros_handle.advertise<unitree_legged_msgs::WirelessRemote>(
+        this->robot_namespace_ + "/wireless_remote", 1
+    );
 }
 
 void UnitreeRos::server_init()
@@ -194,6 +236,15 @@ void UnitreeRos::subscriber_init()
             this
         );
     }
+}
+
+void UnitreeRos::timer_init()
+{
+    this->wirelessRemote_publish_timer = this->ros_handle.createWallTimer(
+        ros::WallDuration(1. / this->timer_freq),
+        &UnitreeRos::wirelessRemote_publish_callback,
+        this
+    );
 }
 
 int main(int argc, char **argv)

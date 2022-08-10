@@ -1,0 +1,2 @@
+RemoteComponents components
+uint16 value
