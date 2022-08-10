@@ -37,6 +37,7 @@ public:
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
     
     UNITREE_LEGGED_SDK::Safety safe;
+    float position_protect_limit;
     int low_power_protect_level;
 
     UNITREE_LEGGED_SDK::HighCmd high_cmd_buffer = {0};
@@ -78,6 +79,7 @@ public:
             const char* robot_namespace,                    // Every topic from this node must have a namespace as prefix.
             const float udp_duration,                       // unit (sec), the duration to call udp related methods.
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
+            float position_protect_limit,                   // Please check safety.h, 0.0 is the least limit
             int power_protect_level,                        // Refer to unitree_legged_sdk/safety.h
             bool cmd_check,
             bool dryrun                                     // If true, does not send the udp message in udp_send() but do everything else.

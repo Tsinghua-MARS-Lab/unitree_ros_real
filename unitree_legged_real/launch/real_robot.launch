@@ -2,10 +2,31 @@
     <!-- For the testing safety, do dryrun by default -->
     <arg name="dryrun" default="true"/>
     <arg name="robot_namespace" default="/a112138"/>
-    <arg name="udp_duration" default="0.002"/>
+    <arg name="udp_duration" default="0.01"/>
     <arg name="cmd_check" default="true"/>
-    <arg name="ctrl_level" default="high"/>
+    <arg name="ctrl_level" default="low"/>
+    <arg name="position_protect_limit" default="0.087"/>
+    <arg name="power_protect_level" default="1"/>
     <arg name="output" default="screen"/>
+    <arg name="camera_mode" default="none"/>
 
     <node name="unitree_robot" pkg="unitree_legged_real" type="real_robot" output="$(arg output)" args="$(arg dryrun) $(arg robot_namespace) $(arg udp_duration) $(arg cmd_check) $(arg ctrl_level)"/>
+
+    <group if="$(eval arg('camera_mode') == 'raw')">
+        <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+            <arg name="camera" value="$(arg robot_namespace)"/>
+        </include>
+    </group>
+    <group if="$(eval arg('camera_mode') == 'aligned')">
+        <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+            <arg name="camera" value="$(arg robot_namespace)"/>
+            <arg name="align_depth" value="true"/>
+        </include>
+    </group>
+    <group if="$(eval arg('camera_mode') == 'pointcloud')">
+        <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+            <arg name="camera" value="$(arg robot_namespace)"/>
+            <arg name="filters" value="pointcloud"/>
+        </include>
+    </group>
 </launch>

@@ -45,7 +45,7 @@ void RosUdpHandler::udp_send()
         if (!this->low_cmd_get && !this->low_cmd_initialized) return;
         // Set to udp buffer after protection
         this->safe.PositionLimit(this->low_cmd_buffer);
-        this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer);
+        this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
         this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->low_power_protect_level);
         // Publish cmd_check if needed
         if (this->cmd_check)
@@ -183,6 +183,7 @@ RosUdpHandler::RosUdpHandler(
     const char* robot_namespace,
     const float udp_duration,
     uint8_t level,
+    float position_protect_limit,
     int power_protect_level,
     bool cmd_check,
     bool dryrun
@@ -193,9 +194,10 @@ RosUdpHandler::RosUdpHandler(
     robot_namespace_(robot_namespace),
     udp_duration_(udp_duration),
     ctrl_level(level),
+    position_protect_limit(position_protect_limit),
+    low_power_protect_level(power_protect_level),
     cmd_check(cmd_check),
     dryrun_(dryrun),
-    low_power_protect_level(power_protect_level),
     loop_udp_send("udp_send", udp_duration, 3, boost::bind(&RosUdpHandler::udp_send, this)),
     loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this))
 {
@@ -241,6 +243,8 @@ int main(int argc, char **argv)
     bool use_low_level = (strcasecmp(argv[5], "low") == 0);
     uint8_t level = UNITREE_LEGGED_SDK::HIGHLEVEL;
     if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
+    // std::string position_protect_limit_s (argv[6]);
+    float position_protect_limit = 0.087;
 
     // construct and initialize this ros node
     ros::init(argc, argv, robot_namespace);
@@ -248,6 +252,7 @@ int main(int argc, char **argv)
         robot_namespace,
         udp_duration,
         level,
+        position_protect_limit,
         1,
         cmd_check,
         dryrun

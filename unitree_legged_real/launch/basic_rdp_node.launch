@@ -5,6 +5,8 @@
     <arg name="udp_duration" default="0.002"/>
     <arg name="cmd_check" default="true"/>
     <arg name="ctrl_level" default="high"/>
+    <arg name="position_protect_limit" default="0.087"/>
+    <arg name="power_protect_level" default="1"/>
     <arg name="output" default="screen"/>
 
     <node name="unitree_udp_handler" pkg="unitree_legged_real" output="$(arg output)" type="ros_udp_node" args="$(arg dryrun) $(arg robot_namespace) $(arg udp_duration) $(arg cmd_check) $(arg ctrl_level)"/>

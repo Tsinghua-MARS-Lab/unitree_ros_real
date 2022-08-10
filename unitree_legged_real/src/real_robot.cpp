@@ -166,11 +166,12 @@ UnitreeRos::UnitreeRos(
     const char* robot_namespace,
     const float udp_duration,
     uint8_t level,
+    float position_protect_limit,
     int power_protect_level,
     bool cmd_check,
     bool dryrun
 ):
-    RosUdpHandler(robot_namespace, udp_duration, level, power_protect_level, cmd_check, dryrun)
+    RosUdpHandler(robot_namespace, udp_duration, level, position_protect_limit, power_protect_level, cmd_check, dryrun)
 {
     this->publisher_init();
     this->server_init();
@@ -250,9 +251,9 @@ void UnitreeRos::timer_init()
 
 int main(int argc, char **argv)
 {
-    if (argc != (5 + 3))
+    if (argc != (7 + 3))
     {
-        std::cout << "You must provide exactly 5 keyword arguments rather than " << argc - 3 << ", please use roslaunch rather than rosrun.";
+        std::cout << "You must provide exactly 7 keyword arguments rather than " << argc - 3 << ", please use roslaunch rather than rosrun.";
         std::cout << std::endl;
         for (int i = 0; i < argc; i++) std::cout << argv[i] << std::endl;
         exit(-1);
@@ -267,6 +268,8 @@ int main(int argc, char **argv)
     bool use_low_level = (strcasecmp(argv[5], "low") == 0);
     uint8_t level = UNITREE_LEGGED_SDK::HIGHLEVEL;
     if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
+    // std::string position_protect_limit_s (argv[6]);
+    float position_protect_limit = 0.087;
 
     // construct and initialize this ros node
     ros::init(argc, argv, robot_namespace);
@@ -274,6 +277,7 @@ int main(int argc, char **argv)
         robot_namespace,
         udp_duration,
         level,
+        position_protect_limit,
         1,
         cmd_check,
         dryrun
