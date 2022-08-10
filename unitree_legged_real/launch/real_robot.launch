@@ -4,6 +4,8 @@
     <arg name="robot_namespace" default="/a112138"/>
     <arg name="udp_duration" default="0.002"/>
     <arg name="cmd_check" default="true"/>
+    <arg name="ctrl_level" default="high"/>
+    <arg name="output" default="screen"/>
 
-    <node name="unitree_robot" pkg="unitree_legged_real" type="real_robot" args="$(arg dryrun) $(arg robot_namespace) $(arg udp_duration) $(arg cmd_check)"/>
+    <node name="unitree_robot" pkg="unitree_legged_real" type="real_robot" output="$(arg output)" args="$(arg dryrun) $(arg robot_namespace) $(arg udp_duration) $(arg cmd_check) $(arg ctrl_level)"/>
 </launch>

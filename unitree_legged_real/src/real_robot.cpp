@@ -127,12 +127,11 @@ UnitreeRos::UnitreeRos(
     const char* robot_namespace,
     const float udp_duration,
     uint8_t level,
-    UNITREE_LEGGED_SDK::HighLevelType highControl,
     int power_protect_level,
     bool cmd_check,
     bool dryrun
 ):
-    RosUdpHandler(robot_namespace, udp_duration, level, highControl, power_protect_level, cmd_check, dryrun)
+    RosUdpHandler(robot_namespace, udp_duration, level, power_protect_level, cmd_check, dryrun)
 {
     this->publisher_init();
     this->server_init();
@@ -199,28 +198,30 @@ void UnitreeRos::subscriber_init()
 
 int main(int argc, char **argv)
 {
-    if (argc != (4 + 3))
+    if (argc != (5 + 3))
     {
-        std::cout << "You must provide exactly 4 keyword arguments rather than " << argc << ", please use roslaunch rather than rosrun.";
+        std::cout << "You must provide exactly 5 keyword arguments rather than " << argc - 3 << ", please use roslaunch rather than rosrun.";
         std::cout << std::endl;
         for (int i = 0; i < argc; i++) std::cout << argv[i] << std::endl;
         exit(-1);
     }
 
     // parse argument in a non-dynamic way, please use roslaunch!!!
-    bool dryrun = strcasecmp(argv[1], "true");
+    bool dryrun = (strcasecmp(argv[1], "true") == 0);
     const char* robot_namespace = argv[2];
     std::string udp_duration_s (argv[3]);
     float udp_duration = std::stof(udp_duration_s);
-    bool cmd_check = strcasecmp(argv[4], "true");
+    bool cmd_check = (strcasecmp(argv[4], "true") == 0);
+    bool use_low_level = (strcasecmp(argv[5], "low") == 0);
+    uint8_t level = UNITREE_LEGGED_SDK::HIGHLEVEL;
+    if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
 
     // construct and initialize this ros node
     ros::init(argc, argv, robot_namespace);
     UnitreeRos unitree_ros_node(
         robot_namespace,
         udp_duration,
-        UNITREE_LEGGED_SDK::HIGHLEVEL,
-        UNITREE_LEGGED_SDK::HighLevelType::Basic,
+        level,
         1,
         cmd_check,
         dryrun

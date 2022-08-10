@@ -61,7 +61,6 @@ public:
             const char* robot_namespace,                    // Every topic from this node must have a namespace as prefix.
             const float udp_duration,                       // unit (sec), the duration to call udp related methods.
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
-            UNITREE_LEGGED_SDK::HighLevelType highControl,
             int power_protect_level,
             bool cmd_check,
             bool dryrun                                     // If true, does not send the udp message in udp_send() but do everything else.
