@@ -64,7 +64,7 @@ void RosUdpHandler::udp_recv()
     int recv_result = this->udp.Recv();
     if (recv_result < 0)
     {
-        ROS_ERROR_DELAYED_THROTTLE(0.1, "udp_recv error");
+        ROS_ERROR_DELAYED_THROTTLE(1, "udp_recv error: %i", recv_result);
         return;
     }
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
@@ -155,7 +155,7 @@ void RosUdpHandler::publisher_init()
             this->robot_namespace_ + "/low_state", 1
         );
         if (this->cmd_check)
-            this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::HighCmd>(
+            this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::LowCmd>(
                 this->robot_namespace_ + "/low_cmd_check", 1
             );
     }
@@ -187,13 +187,14 @@ RosUdpHandler::RosUdpHandler(
     bool cmd_check,
     bool dryrun
 ):
+    safe(UNITREE_LEGGED_SDK::LeggedType::A1),
+    // udp(8091, "192.168.123.161", 8082, sizeof(UNITREE_LEGGED_SDK::HighCmd), sizeof(UNITREE_LEGGED_SDK::HighState)),
+    udp(level),
     robot_namespace_(robot_namespace),
     udp_duration_(udp_duration),
     ctrl_level(level),
     cmd_check(cmd_check),
     dryrun_(dryrun),
-    udp(level),
-    safe(UNITREE_LEGGED_SDK::LeggedType::A1),
     low_power_protect_level(power_protect_level),
     loop_udp_send("udp_send", udp_duration, 3, boost::bind(&RosUdpHandler::udp_send, this)),
     loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this))
@@ -214,10 +215,11 @@ RosUdpHandler::RosUdpHandler(
     //     this->udp = UNITREE_LEGGED_SDK::UDP(level);
     // }
     this->udp_init(level);
+    ROS_INFO("Udp initialized");
     this->publisher_init();
     this->subscriber_init();
     this->udp_start();
-    ROS_DEBUG("RosUpdHandler constructed and initialized");
+    ROS_INFO("RosUdpHandler constructed and started");
 }
 
 int main(int argc, char **argv)

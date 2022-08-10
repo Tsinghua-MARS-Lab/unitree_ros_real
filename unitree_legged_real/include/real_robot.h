@@ -40,7 +40,7 @@ public:
 
     ros::Subscriber low_motor_subscriber;
 
-    ros::WallTimer wirelessRemote_publish_timer;
+    ros::Timer wirelessRemote_publish_timer;
 
 protected:
     // For simplicity, some states and commands must be processed and estimate
@@ -65,7 +65,7 @@ protected:
 
     void low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr &msg);
     
-    void wirelessRemote_publish_callback(const ros::WallTimerEvent& event);
+    void wirelessRemote_publish_callback(const ros::TimerEvent& event);
 
 public:
     UnitreeRos(

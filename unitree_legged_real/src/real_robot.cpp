@@ -123,7 +123,7 @@ void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr
     }
 }
 
-void UnitreeRos::wirelessRemote_publish_callback(const ros::WallTimerEvent& event)
+void UnitreeRos::wirelessRemote_publish_callback(const ros::TimerEvent& event)
 {
     unitree_legged_msgs::WirelessRemote ros_msg;
     xRockerBtnDataStruct _keyData;
@@ -175,6 +175,7 @@ UnitreeRos::UnitreeRos(
     this->publisher_init();
     this->server_init();
     this->subscriber_init();
+    this->timer_init();
 }
 
 /* The publisher in the base class is called by its constructor. This publisher_init is not related
@@ -240,8 +241,8 @@ void UnitreeRos::subscriber_init()
 
 void UnitreeRos::timer_init()
 {
-    this->wirelessRemote_publish_timer = this->ros_handle.createWallTimer(
-        ros::WallDuration(1. / this->timer_freq),
+    this->wirelessRemote_publish_timer = this->ros_handle.createTimer(
+        ros::Duration(1. / this->timer_freq),
         &UnitreeRos::wirelessRemote_publish_callback,
         this
     );
