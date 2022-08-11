@@ -19,6 +19,7 @@ void RosUdpHandler::udp_init(uint8_t level)
     else if (level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->udp.InitCmdData(this->low_cmd_buffer);
+        this->low_cmd_motorCmd_init();
     }
 }
 
@@ -32,7 +33,6 @@ void RosUdpHandler::udp_send()
 {
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
-        if (!this->high_cmd_get && !this->high_cmd_initialized) return;
         this->udp.SetSend(this->high_cmd_buffer);
         if (this->cmd_check)
         {
@@ -42,7 +42,6 @@ void RosUdpHandler::udp_send()
     }
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
-        if (!this->low_cmd_get && !this->low_cmd_initialized) return;
         // Set to udp buffer after protection
         this->safe.PositionLimit(this->low_cmd_buffer);
         this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
@@ -71,17 +70,56 @@ void RosUdpHandler::udp_recv()
     {
         this->udp.GetRecv(this->high_state_buffer);
         this->high_state_publish();
-        if (!this->high_cmd_initialized) this->high_cmd_init();
+        if (!this->high_cmd_metadata_get) this->high_cmd_metadata_update();
     }
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->udp.GetRecv(this->low_state_buffer);
         this->low_state_publish();
-        if (!this->low_cmd_initialized) this->low_cmd_init();
+        if (!this->low_cmd_metadata_get) this->low_cmd_metadata_update();
     }
 }
 
-void RosUdpHandler::high_cmd_init()
+// NOTE: this function is one of the reason that this node can only work on Unitree A1 robot.
+void RosUdpHandler::low_cmd_motorCmd_init()
+{
+    // set mode
+    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 10;
+    // set q (position)
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_0].q = -0.3;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_1].q = 0.9;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_2].q = -1.6;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_0].q = 0.3;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_1].q = 0.9;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_2].q = -1.6;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_0].q = -0.3;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_1].q = 0.9;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_2].q = -1.6;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_0].q = 0.3;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_1].q = 0.9;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_2].q = -1.6;
+    // set dq (velocity)
+    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].dq = 0.;
+    // set tau (torque)
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_0].tau = +this->low_cmd_default_tau; //
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_1].tau = -this->low_cmd_default_tau;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_2].tau = +this->low_cmd_default_tau;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_0].tau = -this->low_cmd_default_tau; //
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_1].tau = -this->low_cmd_default_tau;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_2].tau = -this->low_cmd_default_tau;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_0].tau = +this->low_cmd_default_tau; //
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_1].tau = -this->low_cmd_default_tau;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_2].tau = +this->low_cmd_default_tau;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_0].tau = -this->low_cmd_default_tau; //
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_1].tau = -this->low_cmd_default_tau;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_2].tau = -this->low_cmd_default_tau;
+    // set Kp
+    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kp = 40.0;
+    // set Kd
+    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kd = 1.0;
+}
+
+void RosUdpHandler::high_cmd_metadata_update()
 {
     this->high_cmd_buffer.levelFlag = this->high_state_buffer.levelFlag;
     this->high_cmd_buffer.commVersion = this->high_state_buffer.commVersion;
@@ -94,23 +132,18 @@ void RosUdpHandler::high_cmd_init()
     this->high_cmd_buffer.footRaiseHeight = this->high_state_buffer.footRaiseHeight;
     this->high_cmd_buffer.bodyHeight = this->high_state_buffer.bodyHeight;
 
-    this->high_cmd_initialized = true;
+    this->high_cmd_metadata_get = true;
 }
 
-void RosUdpHandler::low_cmd_init()
+void RosUdpHandler::low_cmd_metadata_update()
 {
     this->low_cmd_buffer.levelFlag = this->low_state_buffer.levelFlag;
     this->low_cmd_buffer.commVersion = this->low_state_buffer.commVersion;
     this->low_cmd_buffer.robotID = this->low_state_buffer.robotID;
     this->low_cmd_buffer.SN = this->low_state_buffer.SN;
     this->low_cmd_buffer.bandWidth = this->low_state_buffer.bandWidth;
-    for (int i (0); i < 12; i++)
-    {
-        this->low_cmd_buffer.motorCmd[i].mode = this->low_state_buffer.motorState[i].mode;
-        this->low_cmd_buffer.motorCmd[i].q = this->low_state_buffer.motorState[i].q;
-    }
 
-    this->low_cmd_initialized = true;
+    this->low_cmd_metadata_get = true;
 }
 
 void RosUdpHandler::high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg)

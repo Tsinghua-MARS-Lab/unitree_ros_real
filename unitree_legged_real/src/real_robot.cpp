@@ -10,7 +10,6 @@
  */
 
 #include "real_robot.h"
-#include "unitree_legged_sdk/a1_const.h" // NOTE: this make the file deeply coupled to A1 robot, not other types
 
 template<class Type_T>
 bool check_until_timeout(
@@ -274,14 +273,17 @@ void UnitreeRos::subscriber_init()
 
 void UnitreeRos::timer_init()
 {
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    {
+        this->protect_limit_publish_timer = this->ros_handle.createTimer(
+            ros::Duration(1. / this->timer_freq),
+            &UnitreeRos::protect_limit_publish_callback,
+            this
+        );
+    }
     this->wirelessRemote_publish_timer = this->ros_handle.createTimer(
         ros::Duration(1. / this->timer_freq),
         &UnitreeRos::wirelessRemote_publish_callback,
-        this
-    );
-    this->protect_limit_publish_timer = this->ros_handle.createTimer(
-        ros::Duration(1. / this->timer_freq),
-        &UnitreeRos::protect_limit_publish_callback,
         this
     );
 }

@@ -39,15 +39,16 @@ public:
     UNITREE_LEGGED_SDK::Safety safe;
     float position_protect_limit;
     int low_power_protect_level;
+    float low_cmd_default_tau = 0.65f;
 
     UNITREE_LEGGED_SDK::HighCmd high_cmd_buffer = {0};
     UNITREE_LEGGED_SDK::HighState high_state_buffer = {0};
-    bool high_cmd_initialized = false;
+    bool high_cmd_metadata_get = false;
     bool high_cmd_get = false; // set to true when a proper cmd is recieved from algorithm and being handled.
 
     UNITREE_LEGGED_SDK::LowCmd low_cmd_buffer = {0};
     UNITREE_LEGGED_SDK::LowState low_state_buffer = {0};
-    bool low_cmd_initialized = false;
+    bool low_cmd_metadata_get = false;
     bool low_cmd_get = false; // set to true when a proper cmd is recieved from algorithm and being handled.
 
     ros::NodeHandle ros_handle;
@@ -63,8 +64,9 @@ protected:
     // Publish the message directly to ROS everytime in udp_recv().
     void udp_recv();
     // Initialize the buffer for the use of setting only part of the cmd.
-    void high_cmd_init();
-    void low_cmd_init();
+    void low_cmd_motorCmd_init();
+    void high_cmd_metadata_update();
+    void low_cmd_metadata_update();
     // Expose udp communication directly through ROS topics
     void high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg);
     void low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg);
