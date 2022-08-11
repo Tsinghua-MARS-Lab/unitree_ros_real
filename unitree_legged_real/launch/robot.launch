@@ -1,0 +1,53 @@
+<launch>
+    <!-- For the testing safety, do dryrun by default -->
+    <arg name="dryrun" default="true"/>
+    <arg name="robot_namespace" default="a112138"/>
+    <arg name="udp_duration" default="0.01"/>
+    <arg name="cmd_check" default="true"/>
+    <arg name="ctrl_level" default="low"/>
+    <arg name="position_protect_limit" default="0.087"/>
+    <arg name="power_protect_level" default="1"/>
+    <arg name="output" default="screen"/>
+    <arg name="camera_mode" default="none"/>
+    <arg name="func" default="full"/>
+
+    <group if="$(eval arg('func') == 'full')">
+        <node name="$(arg robot_namespace)" pkg="unitree_legged_real" type="real_robot" output="$(arg output)" args="$(arg robot_namespace)">
+            <param name="dryrun" type="bool" value="$(arg dryrun)"/>
+            <param name="udp_duration" type="double" value="$(arg udp_duration)"/>
+            <param name="cmd_check" type="bool" value="$(arg cmd_check)"/>
+            <param name="ctrl_level" type="str" value="$(arg ctrl_level)"/>
+            <param name="position_protect_limit" type="double" value="$(arg position_protect_limit)"/>
+            <param name="power_protect_level" type="int" value="$(arg power_protect_level)"/>
+        </node>
+
+        <group if="$(eval arg('camera_mode') == 'raw')">
+            <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+                <arg name="camera" value="$(arg robot_namespace)"/>
+            </include>
+        </group>
+        <group if="$(eval arg('camera_mode') == 'aligned')">
+            <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+                <arg name="camera" value="$(arg robot_namespace)"/>
+                <arg name="align_depth" value="true"/>
+            </include>
+        </group>
+        <group if="$(eval arg('camera_mode') == 'pointcloud')">
+            <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+                <arg name="camera" value="$(arg robot_namespace)"/>
+                <arg name="filters" value="pointcloud"/>
+            </include>
+        </group>
+    </group>
+
+    <group if="$(eval arg('func') == 'basic')">
+        <node name="$(arg robot_namespace)" pkg="unitree_legged_real" type="ros_udp_node" output="$(arg output)" args="$(arg robot_namespace)">
+            <param name="dryrun" type="bool" value="$(arg dryrun)"/>
+            <param name="udp_duration" type="double" value="$(arg udp_duration)"/>
+            <param name="cmd_check" type="bool" value="$(arg cmd_check)"/>
+            <param name="ctrl_level" type="str" value="$(arg ctrl_level)"/>
+            <param name="position_protect_limit" type="double" value="$(arg position_protect_limit)"/>
+            <param name="power_protect_level" type="int" value="$(arg power_protect_level)"/>
+        </node>
+    </group>
+</launch>
