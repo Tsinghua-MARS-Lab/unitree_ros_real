@@ -10,6 +10,7 @@
  */
 
 #include "real_robot.h"
+#include "unitree_legged_sdk/a1_const.h" // NOTE: this make the file deeply coupled to A1 robot, not other types
 
 template<class Type_T>
 bool check_until_timeout(
@@ -162,8 +163,36 @@ void UnitreeRos::wirelessRemote_publish_callback(const ros::TimerEvent& event)
     this->wirelessRemote_publisher.publish(ros_msg);
 }
 
+void UnitreeRos::protect_limit_publish_callback(const ros::TimerEvent& event)
+{
+    std_msgs::Float32MultiArray position_limit_msg;
+    position_limit_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    position_limit_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    position_limit_msg.layout.dim[0].size = 2; // (high, level)
+    position_limit_msg.layout.dim[0].stride = 2 * 12;
+    position_limit_msg.layout.dim[1].size = 12; // (hip0, thigh0, calf, hip1, thigh1, calf1, ...) 12 in total
+    position_limit_msg.layout.dim[1].stride = 12;
+    
+    // NOTE: the following code is only workable on A1 robot, not other model
+    for (int i (0); i < 12; i+=3)
+    {
+        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Hip_min + this->position_protect_limit);
+        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Thigh_min + this->position_protect_limit);
+        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Calf_min + this->position_protect_limit);
+    }
+    for (int i (0); i < 12; i+=3)
+    {
+        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Hip_max - this->position_protect_limit);
+        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Thigh_max - this->position_protect_limit);
+        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Calf_max - this->position_protect_limit);
+    }
+    
+    // publish the limit data. NOTE: the data unit is radian
+    this->position_limit_publisher.publish(position_limit_msg);
+}
+
 UnitreeRos::UnitreeRos(
-    const char* robot_namespace,
+    std::string robot_namespace,
     const float udp_duration,
     uint8_t level,
     float position_protect_limit,
@@ -188,6 +217,9 @@ void UnitreeRos::publisher_init()
     {
         this->pose_estimation_publisher = this->ros_handle.advertise<sensor_msgs::Imu>(
             this->robot_namespace_ + "/imu_estimated", 1
+        );
+        this->position_limit_publisher = this->ros_handle.advertise<std_msgs::Float32MultiArray>(
+            this->robot_namespace_ + "/position_limit", 1
         );
     }
     this->wirelessRemote_publisher = this->ros_handle.advertise<unitree_legged_msgs::WirelessRemote>(
@@ -247,38 +279,37 @@ void UnitreeRos::timer_init()
         &UnitreeRos::wirelessRemote_publish_callback,
         this
     );
+    this->protect_limit_publish_timer = this->ros_handle.createTimer(
+        ros::Duration(1. / this->timer_freq),
+        &UnitreeRos::protect_limit_publish_callback,
+        this
+    );
 }
 
 int main(int argc, char **argv)
 {
-    if (argc != (7 + 3))
-    {
-        std::cout << "You must provide exactly 7 keyword arguments rather than " << argc - 3 << ", please use roslaunch rather than rosrun.";
-        std::cout << std::endl;
-        for (int i = 0; i < argc; i++) std::cout << argv[i] << std::endl;
-        exit(-1);
-    }
+    std::string robot_namespace (argv[1]);
+    ros::init(argc, argv, robot_namespace);
+    ros::NodeHandle nh ("~");
 
-    // parse argument in a non-dynamic way, please use roslaunch!!!
-    bool dryrun = (strcasecmp(argv[1], "true") == 0);
-    const char* robot_namespace = argv[2];
-    std::string udp_duration_s (argv[3]);
-    float udp_duration = std::stof(udp_duration_s);
-    bool cmd_check = (strcasecmp(argv[4], "true") == 0);
-    bool use_low_level = (strcasecmp(argv[5], "low") == 0);
+    // get configuration using rosparam, use ros launch to start this node!!!
+    bool dryrun; nh.param<bool>("dryrun", dryrun, true);
+    float udp_duration; nh.param<float>("udp_duration", udp_duration, 0.01);
+    bool cmd_check; nh.param<bool>("cmd_check", cmd_check, true);
+    std::string ctrl_level_s; nh.getParam("ctrl_level", ctrl_level_s);
+    bool use_low_level = (ctrl_level_s.compare("low") == 0);
     uint8_t level = UNITREE_LEGGED_SDK::HIGHLEVEL;
     if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
-    // std::string position_protect_limit_s (argv[6]);
-    float position_protect_limit = 0.087;
+    float position_protect_limit; nh.param<float>("position_protect_limit", position_protect_limit, 0.087);
+    int power_protect_level; nh.param<int>("power_protect_level", power_protect_level, 1);
 
     // construct and initialize this ros node
-    ros::init(argc, argv, robot_namespace);
     UnitreeRos unitree_ros_node(
         robot_namespace,
         udp_duration,
         level,
         position_protect_limit,
-        1,
+        power_protect_level,
         cmd_check,
         dryrun
     );

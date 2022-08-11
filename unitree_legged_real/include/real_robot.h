@@ -13,6 +13,8 @@
 #include "geometry_msgs/Twist.h"
 #include "sensor_msgs/Imu.h"
 #include "std_msgs/Float32.h"
+#include "std_msgs/Float32MultiArray.h"
+#include "std_msgs/MultiArrayDimension.h"
 #include <unitree_legged_msgs/LegsCmd.h>
 #include <unitree_legged_msgs/WirelessRemote.h>
 #include <unitree_legged_srvs/SetGaitType.h>
@@ -29,6 +31,7 @@ public:
     
     ros::Publisher pose_estimation_publisher;
     ros::Publisher wirelessRemote_publisher;
+    ros::Publisher position_limit_publisher;
 
     ros::ServiceServer set_gaitType_service;
     ros::ServiceServer high_mode_service;
@@ -41,6 +44,7 @@ public:
     ros::Subscriber low_motor_subscriber;
 
     ros::Timer wirelessRemote_publish_timer;
+    ros::Timer protect_limit_publish_timer;
 
 protected:
     // For simplicity, some states and commands must be processed and estimate
@@ -66,10 +70,11 @@ protected:
     void low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr &msg);
     
     void wirelessRemote_publish_callback(const ros::TimerEvent& event);
+    void protect_limit_publish_callback(const ros::TimerEvent& event);
 
 public:
     UnitreeRos(
-            const char* robot_namespace,                    // Every topic from this node must have a namespace as prefix.
+            std::string robot_namespace,                    // Every topic from this node must have a namespace as prefix.
             const float udp_duration,                       // unit (sec), the duration to call udp related methods.
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
             float position_protect_limit,

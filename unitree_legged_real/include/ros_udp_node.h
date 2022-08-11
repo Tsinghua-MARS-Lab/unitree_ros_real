@@ -76,7 +76,7 @@ protected:
 
 public:
     RosUdpHandler(
-            const char* robot_namespace,                    // Every topic from this node must have a namespace as prefix.
+            std::string robot_namespace,                    // Every topic from this node must have a namespace as prefix.
             const float udp_duration,                       // unit (sec), the duration to call udp related methods.
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
             float position_protect_limit,                   // Please check safety.h, 0.0 is the least limit

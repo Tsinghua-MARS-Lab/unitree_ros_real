@@ -180,7 +180,7 @@ void RosUdpHandler::subscriber_init()
 }
 
 RosUdpHandler::RosUdpHandler(
-    const char* robot_namespace,
+    std::string robot_namespace,
     const float udp_duration,
     uint8_t level,
     float position_protect_limit,
@@ -226,34 +226,28 @@ RosUdpHandler::RosUdpHandler(
 
 int main(int argc, char **argv)
 {
-    if (argc != (5 + 3))
-    {
-        std::cout << "You must provide exactly 5 keyword arguments rather than " << argc - 3 << ", please use roslaunch rather than rosrun.";
-        std::cout << std::endl;
-        for (int i = 0; i < argc; i++) std::cout << argv[i] << std::endl;
-        exit(-1);
-    }
+    std::string robot_namespace (argv[1]);
+    ros::init(argc, argv, robot_namespace);
+    ros::NodeHandle nh ("~");
 
-    // parse argument in a non-dynamic way, please use roslaunch!!!
-    bool dryrun = (strcasecmp(argv[1], "true") == 0);
-    const char* robot_namespace = argv[2];
-    std::string udp_duration_s (argv[3]);
-    float udp_duration = std::stof(udp_duration_s);
-    bool cmd_check = (strcasecmp(argv[4], "true") == 0);
-    bool use_low_level = (strcasecmp(argv[5], "low") == 0);
+    // get configuration using rosparam, use ros launch to start this node!!!
+    bool dryrun; nh.param<bool>("dryrun", dryrun, true);
+    float udp_duration; nh.param<float>("udp_duration", udp_duration, 0.01);
+    bool cmd_check; nh.getParam("cmd_check", cmd_check);
+    std::string ctrl_level_s; nh.getParam("ctrl_level", ctrl_level_s);
+    bool use_low_level = (ctrl_level_s.compare("low") == 0);
     uint8_t level = UNITREE_LEGGED_SDK::HIGHLEVEL;
     if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
-    // std::string position_protect_limit_s (argv[6]);
-    float position_protect_limit = 0.087;
+    float position_protect_limit; nh.param<float>("position_protect_limit", position_protect_limit, 0.087);
+    int power_protect_level; nh.param<int>("power_protect_level", power_protect_level, 1);
 
     // construct and initialize this ros node
-    ros::init(argc, argv, robot_namespace);
     RosUdpHandler ros_udp_handler(
         robot_namespace,
         udp_duration,
         level,
         position_protect_limit,
-        1,
+        power_protect_level,
         cmd_check,
         dryrun
     );
