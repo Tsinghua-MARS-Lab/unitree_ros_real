@@ -64,7 +64,8 @@ protected:
     // Publish the message directly to ROS everytime in udp_recv().
     void udp_recv();
     // Initialize the buffer for the use of setting only part of the cmd.
-    void low_cmd_motorCmd_init();
+    void set_default_high_cmd();
+    void set_default_low_cmd();
     void high_cmd_metadata_update();
     void low_cmd_metadata_update();
     // Expose udp communication directly through ROS topics

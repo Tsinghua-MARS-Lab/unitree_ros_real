@@ -19,12 +19,22 @@ void RosUdpHandler::udp_init(uint8_t level)
     else if (level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->udp.InitCmdData(this->low_cmd_buffer);
-        this->low_cmd_motorCmd_init();
     }
 }
 
 void RosUdpHandler::udp_start()
 {
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
+    {
+        this->set_default_high_cmd();
+        this->udp.SetSend(this->high_cmd_buffer);
+        this->udp.Send();
+    } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    {
+        this->set_default_low_cmd();
+        this->udp.SetSend(this->low_cmd_buffer);
+        this->udp.Send();
+    }
     this->loop_udp_recv.start();
     this->loop_udp_send.start();
 }
@@ -44,8 +54,11 @@ void RosUdpHandler::udp_send()
     {
         // Set to udp buffer after protection
         this->safe.PositionLimit(this->low_cmd_buffer);
-        this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
-        this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->low_power_protect_level);
+        if (this->low_cmd_metadata_get)
+        {   // means the los_state_buffer is valid, the following protection should be running.
+            this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
+            this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->low_power_protect_level);
+        }
         // Publish cmd_check if needed
         if (this->cmd_check)
         {
@@ -80,8 +93,21 @@ void RosUdpHandler::udp_recv()
     }
 }
 
+void RosUdpHandler::set_default_high_cmd()
+{
+    this->high_cmd_buffer.mode = 0;
+    this->high_cmd_buffer.gaitType = 0;
+    this->high_cmd_buffer.speedLevel = 0;
+    this->high_cmd_buffer.footRaiseHeight = 0.08;
+    this->high_cmd_buffer.bodyHeight = 0.28;
+    for (int i(0); i < 2; i++) this->high_cmd_buffer.postion[i] = 0.;
+    for (int i(0); i < 3; i++) this->high_cmd_buffer.euler[i] = 0.;
+    for (int i(0); i < 2; i++) this->high_cmd_buffer.velocity[i] = 0.;
+    this->high_cmd_buffer.yawSpeed = 0;
+}
+
 // NOTE: this function is one of the reason that this node can only work on Unitree A1 robot.
-void RosUdpHandler::low_cmd_motorCmd_init()
+void RosUdpHandler::set_default_low_cmd()
 {
     // set mode
     for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 10;

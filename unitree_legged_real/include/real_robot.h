@@ -21,6 +21,7 @@
 #include <unitree_legged_srvs/SetHighMode.h>
 #include <unitree_legged_srvs/SetSpeedLevel.h>
 #include "unitree_legged_sdk/unitree_joystick.h"
+#include "unitree_legged_sdk/a1_const.h"
 
 class UnitreeRos: public RosUdpHandler
 {
