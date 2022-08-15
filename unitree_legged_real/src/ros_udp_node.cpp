@@ -277,6 +277,9 @@ RosUdpHandler::RosUdpHandler(
     // }
     this->udp_init(level);
     ROS_INFO("Udp initialized");
+    // set ros parameters
+    this->ros_handle.setParam(this->robot_namespace_ + "/PosStopF", UNITREE_LEGGED_SDK::PosStopF);
+    this->ros_handle.setParam(this->robot_namespace_ + "/VelStopF", UNITREE_LEGGED_SDK::VelStopF);
     this->publisher_init();
     this->subscriber_init();
     this->udp_start();
