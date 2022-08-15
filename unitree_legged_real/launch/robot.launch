@@ -8,8 +8,12 @@
     <arg name="position_protect_limit" default="0.087"/>
     <arg name="power_protect_level" default="1"/>
     <arg name="output" default="screen"/>
-    <arg name="camera_mode" default="none"/>
     <arg name="func" default="full"/>
+    <!-- camera configurations, only when func:=full and camera_mode!=none -->
+    <arg name="camera_mode" default="none"/>
+    <arg name="image_fps" default="30"/>
+    <arg name="image_width" default="640"/>
+    <arg name="image_height" default="480"/>
 
     <group if="$(eval arg('func') == 'full')">
         <node name="$(arg robot_namespace)" pkg="unitree_legged_real" type="real_robot" output="$(arg output)" args="$(arg robot_namespace)">
@@ -24,18 +28,36 @@
         <group if="$(eval arg('camera_mode') == 'raw')">
             <include file="$(find realsense2_camera)/launch/rs_camera.launch">
                 <arg name="camera" value="$(arg robot_namespace)"/>
+                <arg name="color_fps" value="$(arg image_fps)"/>
+                <arg name="depth_fps" value="$(arg image_fps)"/>
+                <arg name="color_width" value="$(arg image_width)"/>
+                <arg name="color_height" value="$(arg image_height)"/>
+                <arg name="depth_width" value="$(arg image_width)"/>
+                <arg name="depth_height" value="$(arg image_height)"/>
             </include>
         </group>
         <group if="$(eval arg('camera_mode') == 'aligned')">
             <include file="$(find realsense2_camera)/launch/rs_camera.launch">
                 <arg name="camera" value="$(arg robot_namespace)"/>
                 <arg name="align_depth" value="true"/>
+                <arg name="color_fps" value="$(arg image_fps)"/>
+                <arg name="depth_fps" value="$(arg image_fps)"/>
+                <arg name="color_width" value="$(arg image_width)"/>
+                <arg name="color_height" value="$(arg image_height)"/>
+                <arg name="depth_width" value="$(arg image_width)"/>
+                <arg name="depth_height" value="$(arg image_height)"/>
             </include>
         </group>
         <group if="$(eval arg('camera_mode') == 'pointcloud')">
             <include file="$(find realsense2_camera)/launch/rs_camera.launch">
                 <arg name="camera" value="$(arg robot_namespace)"/>
                 <arg name="filters" value="pointcloud"/>
+                <arg name="color_fps" value="$(arg image_fps)"/>
+                <arg name="depth_fps" value="$(arg image_fps)"/>
+                <arg name="color_width" value="$(arg image_width)"/>
+                <arg name="color_height" value="$(arg image_height)"/>
+                <arg name="depth_width" value="$(arg image_width)"/>
+                <arg name="depth_height" value="$(arg image_height)"/>
             </include>
         </group>
     </group>

@@ -119,7 +119,7 @@ void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr
         this->low_cmd_buffer.motorCmd[i].Kp = msg->cmd[i].Kp;
         this->low_cmd_buffer.motorCmd[i].Kd = msg->cmd[i].Kd;
         for (int j = 0; j < 3; j++)
-            this->low_cmd_buffer.motorCmd[i].reserve[j] = msg->cmd[i].reserve[i];
+            this->low_cmd_buffer.motorCmd[i].reserve[j] = msg->cmd[i].reserve[j];
     }
 }
 
@@ -128,9 +128,9 @@ void UnitreeRos::wirelessRemote_publish_callback(const ros::TimerEvent& event)
     unitree_legged_msgs::WirelessRemote ros_msg;
     xRockerBtnDataStruct _keyData;
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-        memcpy(&_keyData, this->high_cmd_buffer.wirelessRemote, 40);
+        memcpy(&_keyData, this->high_state_buffer.wirelessRemote, 40);
     else
-        memcpy(&_keyData, this->low_cmd_buffer.wirelessRemote, 40);
+        memcpy(&_keyData, this->low_state_buffer.wirelessRemote, 40);
     
     // transfer data from the struct to ros message
     for (int i (0); i < 2; i++) ros_msg.head[i] = _keyData.head[i];
@@ -263,7 +263,7 @@ void UnitreeRos::subscriber_init()
     } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->low_motor_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/motor_cmd",
+            this->robot_namespace_ + "/legs_cmd",
             10,
             &UnitreeRos::low_motor_callback,
             this

@@ -140,7 +140,7 @@ void RosUdpHandler::set_default_low_cmd()
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_1].tau = -this->low_cmd_default_tau;
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_2].tau = -this->low_cmd_default_tau;
     // set Kp
-    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kp = 40.0;
+    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kp = 20.0;
     // set Kd
     for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kd = 1.0;
 }
