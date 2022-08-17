@@ -40,6 +40,7 @@ public:
     float position_protect_limit;
     int low_power_protect_level;
     float low_cmd_default_tau = 0.65f;
+    bool start_stand; // if true, the motor will be initialized to mode 10, otherwise mode 0.
 
     UNITREE_LEGGED_SDK::HighCmd high_cmd_buffer = {0};
     UNITREE_LEGGED_SDK::HighState high_state_buffer = {0};
@@ -85,6 +86,7 @@ public:
             float position_protect_limit,                   // Please check safety.h, 0.0 is the least limit
             int power_protect_level,                        // Refer to unitree_legged_sdk/safety.h
             bool cmd_check,
+            bool start_stand,                               // If true, defualt motor mode is 10, otherwise 0.
             bool dryrun                                     // If true, does not send the udp message in udp_send() but do everything else.
         );
 };

@@ -9,6 +9,8 @@
     <arg name="power_protect_level" default="1"/>
     <arg name="output" default="screen"/>
     <arg name="func" default="full"/>
+    <arg name="publish_imu" default="false"/>
+    <arg name="start_stand" default="false"/>
     <!-- camera configurations, only when func:=full and camera_mode!=none -->
     <arg name="camera_mode" default="none"/>
     <arg name="image_fps" default="30"/>
@@ -23,6 +25,8 @@
             <param name="ctrl_level" type="str" value="$(arg ctrl_level)"/>
             <param name="position_protect_limit" type="double" value="$(arg position_protect_limit)"/>
             <param name="power_protect_level" type="int" value="$(arg power_protect_level)"/>
+            <param name="publish_imu" type="bool" value="$(arg publish_imu)"/>
+            <param name="start_stand" type="bool" value="$(arg start_stand)"/>
         </node>
 
         <group if="$(eval arg('camera_mode') == 'raw')">
@@ -70,6 +74,7 @@
             <param name="ctrl_level" type="str" value="$(arg ctrl_level)"/>
             <param name="position_protect_limit" type="double" value="$(arg position_protect_limit)"/>
             <param name="power_protect_level" type="int" value="$(arg power_protect_level)"/>
+            <param name="start_stand" type="bool" value="$(arg start_stand)"/>
         </node>
     </group>
 </launch>

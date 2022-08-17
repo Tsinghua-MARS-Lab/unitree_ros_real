@@ -29,8 +29,11 @@ public:
     int state_check_times_max = 50; // When changing mode through UDP, the service handler checks the updated state at most this times
     int state_check_freq = 10; // The frequency of checking mode update.
     int timer_freq = 50; // default timer frequency for some default functions.
+    bool publish_imu = false;
+    int imu_publish_freq = 100;
+    int imu_publish_seq = 0;
     
-    ros::Publisher pose_estimation_publisher;
+    ros::Publisher imu_publisher;
     ros::Publisher wirelessRemote_publisher;
     ros::Publisher position_limit_publisher;
 
@@ -44,13 +47,12 @@ public:
 
     ros::Subscriber low_motor_subscriber;
 
+    ros::Timer imu_publish_timer;
     ros::Timer wirelessRemote_publish_timer;
     ros::Timer protect_limit_publish_timer;
 
 protected:
     // For simplicity, some states and commands must be processed and estimate
-    void pose_estimate_and_publish();
-
     bool set_gaitType_srv_callback(
         unitree_legged_srvs::SetGaitType::Request &req,
         unitree_legged_srvs::SetGaitType::Response &res
@@ -70,6 +72,7 @@ protected:
 
     void low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr &msg);
     
+    void imu_publish_callback(const ros::TimerEvent& event);
     void wirelessRemote_publish_callback(const ros::TimerEvent& event);
     void protect_limit_publish_callback(const ros::TimerEvent& event);
 
@@ -81,6 +84,8 @@ public:
             float position_protect_limit,
             int power_protect_level,
             bool cmd_check,
+            bool start_stand,
+            bool publish_imu,
             bool dryrun                                     // If true, does not send the udp message in udp_send() but do everything else.
         );
     void publisher_init();

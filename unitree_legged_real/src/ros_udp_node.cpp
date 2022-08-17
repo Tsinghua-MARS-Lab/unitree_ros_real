@@ -110,7 +110,10 @@ void RosUdpHandler::set_default_high_cmd()
 void RosUdpHandler::set_default_low_cmd()
 {
     // set mode
-    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 10;
+    if (this->start_stand)
+        for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 10;
+    else
+        for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
     // set q (position)
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_0].q = -0.3;
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_1].q = 0.9;
@@ -245,6 +248,7 @@ RosUdpHandler::RosUdpHandler(
     float position_protect_limit,
     int power_protect_level,
     bool cmd_check,
+    bool start_stand,
     bool dryrun
 ):
     safe(UNITREE_LEGGED_SDK::LeggedType::A1),
@@ -256,6 +260,7 @@ RosUdpHandler::RosUdpHandler(
     position_protect_limit(position_protect_limit),
     low_power_protect_level(power_protect_level),
     cmd_check(cmd_check),
+    start_stand(start_stand),
     dryrun_(dryrun),
     loop_udp_send("udp_send", udp_duration, 3, boost::bind(&RosUdpHandler::udp_send, this)),
     loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this))
@@ -302,6 +307,10 @@ int main(int argc, char **argv)
     if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
     float position_protect_limit; nh.param<float>("position_protect_limit", position_protect_limit, 0.087);
     int power_protect_level; nh.param<int>("power_protect_level", power_protect_level, 1);
+    bool start_stand; nh.param<bool>("start_stand", start_stand, true);
+
+    if (start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
+    else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
 
     // construct and initialize this ros node
     RosUdpHandler ros_udp_handler(
@@ -311,6 +320,7 @@ int main(int argc, char **argv)
         position_protect_limit,
         power_protect_level,
         cmd_check,
+        start_stand,
         dryrun
     );
     ros::spin();

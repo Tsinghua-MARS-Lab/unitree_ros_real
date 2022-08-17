@@ -123,6 +123,35 @@ void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr
     }
 }
 
+void UnitreeRos::imu_publish_callback(const ros::TimerEvent& event){
+    sensor_msgs::Imu ros_msg;
+    UNITREE_LEGGED_SDK::IMU *imu_ptr;
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
+        imu_ptr = &this->high_state_buffer.imu;
+    else
+        imu_ptr = &this->low_state_buffer.imu;
+    
+    // fill ros message
+    ros_msg.header.seq = this->imu_publish_seq++;
+    ros_msg.header.stamp = ros::Time::now();
+    ros_msg.header.frame_id = this->robot_namespace_ + "/imu_link";
+    ros_msg.orientation.x = imu_ptr->quaternion[0];
+    ros_msg.orientation.y = imu_ptr->quaternion[1];
+    ros_msg.orientation.z = imu_ptr->quaternion[2];
+    ros_msg.orientation.w = imu_ptr->quaternion[3];
+    // ros_msg.orientation_covariance unknown
+    ros_msg.angular_velocity.x = imu_ptr->gyroscope[0];
+    ros_msg.angular_velocity.y = imu_ptr->gyroscope[1];
+    ros_msg.angular_velocity.z = imu_ptr->gyroscope[2];
+    // ros_msg.angular_velocity_covariance unknown
+    ros_msg.linear_acceleration.x = imu_ptr->accelerometer[0];
+    ros_msg.linear_acceleration.y = imu_ptr->accelerometer[1];
+    ros_msg.linear_acceleration.z = imu_ptr->accelerometer[2];
+    // ros_mag.linear_acceleration_covariance unknown
+
+    this->imu_publisher.publish(ros_msg);
+}
+
 void UnitreeRos::wirelessRemote_publish_callback(const ros::TimerEvent& event)
 {
     unitree_legged_msgs::WirelessRemote ros_msg;
@@ -197,9 +226,21 @@ UnitreeRos::UnitreeRos(
     float position_protect_limit,
     int power_protect_level,
     bool cmd_check,
+    bool start_stand,
+    bool publish_imu,
     bool dryrun
 ):
-    RosUdpHandler(robot_namespace, udp_duration, level, position_protect_limit, power_protect_level, cmd_check, dryrun)
+    publish_imu(publish_imu),
+    RosUdpHandler(
+        robot_namespace,
+        udp_duration,
+        level,
+        position_protect_limit,
+        power_protect_level,
+        cmd_check,
+        start_stand,
+        dryrun
+    )
 {
     this->publisher_init();
     this->server_init();
@@ -214,13 +255,14 @@ void UnitreeRos::publisher_init()
 {
     if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
-        this->pose_estimation_publisher = this->ros_handle.advertise<sensor_msgs::Imu>(
-            this->robot_namespace_ + "/imu_estimated", 1
-        );
         this->position_limit_publisher = this->ros_handle.advertise<std_msgs::Float32MultiArray>(
             this->robot_namespace_ + "/position_limit", 1
         );
     }
+    if (this->publish_imu)
+        this->imu_publisher = this->ros_handle.advertise<sensor_msgs::Imu>(
+            this->robot_namespace_ + "/imu", 1
+        );
     this->wirelessRemote_publisher = this->ros_handle.advertise<unitree_legged_msgs::WirelessRemote>(
         this->robot_namespace_ + "/wireless_remote", 1
     );
@@ -281,6 +323,12 @@ void UnitreeRos::timer_init()
             this
         );
     }
+    if (this->publish_imu)
+        this->imu_publish_timer = this->ros_handle.createTimer(
+            ros::Duration(1. / this->imu_publish_freq),
+            &UnitreeRos::imu_publish_callback,
+            this
+        );
     this->wirelessRemote_publish_timer = this->ros_handle.createTimer(
         ros::Duration(1. / this->timer_freq),
         &UnitreeRos::wirelessRemote_publish_callback,
@@ -304,6 +352,11 @@ int main(int argc, char **argv)
     if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
     float position_protect_limit; nh.param<float>("position_protect_limit", position_protect_limit, 0.087);
     int power_protect_level; nh.param<int>("power_protect_level", power_protect_level, 1);
+    bool publish_imu; nh.param<bool>("publish_imu", publish_imu, false);
+    bool start_stand; nh.param<bool>("start_stand", start_stand, true);
+
+    if (start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
+    else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
 
     // construct and initialize this ros node
     UnitreeRos unitree_ros_node(
@@ -313,6 +366,8 @@ int main(int argc, char **argv)
         position_protect_limit,
         power_protect_level,
         cmd_check,
+        start_stand,
+        publish_imu,
         dryrun
     );
     ros::spin();

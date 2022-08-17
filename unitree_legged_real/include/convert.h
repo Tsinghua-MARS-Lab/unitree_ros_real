@@ -30,7 +30,11 @@ unitree_legged_msgs::IMU state2rosMsg(UNITREE_LEGGED_SDK::IMU &state)
 {
     unitree_legged_msgs::IMU ros_msg;
 
-    for (int i(0); i < 4; i++) ros_msg.quaternion[i] = state.quaternion[i];
+    // make sure the ros_msg quaternion is in (x, y, z, w) order
+    ros_msg.quaternion[0] = state.quaternion[1];
+    ros_msg.quaternion[1] = state.quaternion[2];
+    ros_msg.quaternion[2] = state.quaternion[3];
+    ros_msg.quaternion[3] = state.quaternion[0];
 
     for (int i(0); i < 3; i++)
     {
