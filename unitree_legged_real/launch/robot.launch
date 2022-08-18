@@ -11,6 +11,8 @@
     <arg name="func" default="full"/>
     <arg name="publish_imu" default="false"/>
     <arg name="start_stand" default="false"/>
+    <arg name="publish_joint_state" default="false"/>
+    <arg name="joint_state_freq" default="100.0"/>
     <!-- camera configurations, only when func:=full and camera_mode!=none -->
     <arg name="camera_mode" default="none"/>
     <arg name="image_fps" default="30"/>
@@ -27,11 +29,19 @@
             <param name="power_protect_level" type="int" value="$(arg power_protect_level)"/>
             <param name="publish_imu" type="bool" value="$(arg publish_imu)"/>
             <param name="start_stand" type="bool" value="$(arg start_stand)"/>
+            <param name="publish_joint_state" type="bool" value="$(arg publish_joint_state)"/>
         </node>
+
+        <group if="$(eval arg('publish_joint_state'))">
+            <include file="$(find a1_description)/launch/a1_state.launch">
+                <arg name="robot_namespace" value="$(arg robot_namespace)"/>
+                <arg name="publish_frequency" value="$(arg joint_state_freq)"/>
+            </include>
+        </group>
 
         <group if="$(eval arg('camera_mode') == 'raw')">
             <include file="$(find realsense2_camera)/launch/rs_camera.launch">
-                <arg name="camera" value="$(arg robot_namespace)"/>
+                <arg name="camera" value="$(arg robot_namespace)/camera"/>
                 <arg name="color_fps" value="$(arg image_fps)"/>
                 <arg name="depth_fps" value="$(arg image_fps)"/>
                 <arg name="color_width" value="$(arg image_width)"/>
@@ -42,7 +52,7 @@
         </group>
         <group if="$(eval arg('camera_mode') == 'aligned')">
             <include file="$(find realsense2_camera)/launch/rs_camera.launch">
-                <arg name="camera" value="$(arg robot_namespace)"/>
+                <arg name="camera" value="$(arg robot_namespace)/camera"/>
                 <arg name="align_depth" value="true"/>
                 <arg name="color_fps" value="$(arg image_fps)"/>
                 <arg name="depth_fps" value="$(arg image_fps)"/>
@@ -53,9 +63,8 @@
             </include>
         </group>
         <group if="$(eval arg('camera_mode') == 'pointcloud')">
-            <include file="$(find realsense2_camera)/launch/rs_camera.launch">
-                <arg name="camera" value="$(arg robot_namespace)"/>
-                <arg name="filters" value="pointcloud"/>
+            <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+                <arg name="camera" value="$(arg robot_namespace)/camera"/>
                 <arg name="color_fps" value="$(arg image_fps)"/>
                 <arg name="depth_fps" value="$(arg image_fps)"/>
                 <arg name="color_width" value="$(arg image_width)"/>

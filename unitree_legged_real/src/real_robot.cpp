@@ -219,6 +219,35 @@ void UnitreeRos::protect_limit_publish_callback(const ros::TimerEvent& event)
     this->position_limit_publisher.publish(position_limit_msg);
 }
 
+void UnitreeRos::joint_state_publish_callback(const ros::TimerEvent& event)
+{
+    sensor_msgs::JointState ros_msg;
+    ros_msg.header.seq = this->joint_state_publish_seq++;
+    ros_msg.header.stamp = ros::Time::now();
+    ros_msg.header.frame_id = this->robot_namespace_ + "/base";
+    // 12 joint names
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FR_hip_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FR_thigh_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FR_calf_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FL_hip_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FL_thigh_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FL_calf_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RR_hip_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RR_thigh_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RR_calf_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RL_hip_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RL_thigh_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RL_calf_joint"));
+    // 12 joint positions
+    for (int i (0); i < 12; i++) ros_msg.position.push_back(this->low_state_buffer.motorState[i].q);
+    // 12 joint velocites
+    for (int i (0); i < 12; i++) ros_msg.velocity.push_back(this->low_state_buffer.motorState[i].dq);
+    // 12 joint effort
+    for (int i (0); i < 12; i++) ros_msg.effort.push_back(this->low_state_buffer.motorState[i].tauEst);
+
+    this->joint_state_publisher.publish(ros_msg);
+}
+
 UnitreeRos::UnitreeRos(
     std::string robot_namespace,
     const float udp_duration,
@@ -228,9 +257,11 @@ UnitreeRos::UnitreeRos(
     bool cmd_check,
     bool start_stand,
     bool publish_imu,
+    bool publish_joint_state,
     bool dryrun
 ):
     publish_imu(publish_imu),
+    publish_joint_state(publish_joint_state),
     RosUdpHandler(
         robot_namespace,
         udp_duration,
@@ -258,6 +289,10 @@ void UnitreeRos::publisher_init()
         this->position_limit_publisher = this->ros_handle.advertise<std_msgs::Float32MultiArray>(
             this->robot_namespace_ + "/position_limit", 1
         );
+        if (this->publish_joint_state)
+            this->joint_state_publisher = this->ros_handle.advertise<sensor_msgs::JointState>(
+                "joint_states", 1
+            );
     }
     if (this->publish_imu)
         this->imu_publisher = this->ros_handle.advertise<sensor_msgs::Imu>(
@@ -322,6 +357,12 @@ void UnitreeRos::timer_init()
             &UnitreeRos::protect_limit_publish_callback,
             this
         );
+        if (this->publish_joint_state)
+            this->joint_state_publish_timer = this->ros_handle.createTimer(
+                ros::Duration(1. / this->joint_state_publish_freq),
+                &UnitreeRos::joint_state_publish_callback,
+                this
+            );
     }
     if (this->publish_imu)
         this->imu_publish_timer = this->ros_handle.createTimer(
@@ -354,6 +395,7 @@ int main(int argc, char **argv)
     int power_protect_level; nh.param<int>("power_protect_level", power_protect_level, 1);
     bool publish_imu; nh.param<bool>("publish_imu", publish_imu, false);
     bool start_stand; nh.param<bool>("start_stand", start_stand, true);
+    bool publish_joint_state; nh.param<bool>("publish_joint_state", publish_joint_state, false);
 
     if (start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
     else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
@@ -368,6 +410,7 @@ int main(int argc, char **argv)
         cmd_check,
         start_stand,
         publish_imu,
+        publish_joint_state,
         dryrun
     );
     ros::spin();

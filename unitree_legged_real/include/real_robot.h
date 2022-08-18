@@ -12,6 +12,7 @@
 #include "ros_udp_node.h"
 #include "geometry_msgs/Twist.h"
 #include "sensor_msgs/Imu.h"
+#include "sensor_msgs/JointState.h"
 #include "std_msgs/Float32.h"
 #include "std_msgs/Float32MultiArray.h"
 #include "std_msgs/MultiArrayDimension.h"
@@ -32,10 +33,14 @@ public:
     bool publish_imu = false;
     int imu_publish_freq = 100;
     int imu_publish_seq = 0;
+    bool publish_joint_state = false;
+    int joint_state_publish_freq = 50;
+    int joint_state_publish_seq = 0;
     
     ros::Publisher imu_publisher;
     ros::Publisher wirelessRemote_publisher;
     ros::Publisher position_limit_publisher;
+    ros::Publisher joint_state_publisher;
 
     ros::ServiceServer set_gaitType_service;
     ros::ServiceServer high_mode_service;
@@ -50,6 +55,7 @@ public:
     ros::Timer imu_publish_timer;
     ros::Timer wirelessRemote_publish_timer;
     ros::Timer protect_limit_publish_timer;
+    ros::Timer joint_state_publish_timer;
 
 protected:
     // For simplicity, some states and commands must be processed and estimate
@@ -75,6 +81,7 @@ protected:
     void imu_publish_callback(const ros::TimerEvent& event);
     void wirelessRemote_publish_callback(const ros::TimerEvent& event);
     void protect_limit_publish_callback(const ros::TimerEvent& event);
+    void joint_state_publish_callback(const ros::TimerEvent& event);
 
 public:
     UnitreeRos(
@@ -86,6 +93,7 @@ public:
             bool cmd_check,
             bool start_stand,
             bool publish_imu,
+            bool publish_joint_state,
             bool dryrun                                     // If true, does not send the udp message in udp_send() but do everything else.
         );
     void publisher_init();
