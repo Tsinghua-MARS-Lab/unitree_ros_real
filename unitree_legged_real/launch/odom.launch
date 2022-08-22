@@ -1,0 +1,60 @@
+<launch>
+    <arg name="robot_namespace" default="a112138"/>
+    <arg name="output" default="screen"/>
+    <arg name="visual_odom" default="true"/>
+    <arg name="legged_twist" default="true"/>
+
+    <group if="$(eval arg('visual_odom'))">
+        <node name="$(arg robot_namespace)_rtabmp_ros" pkg="rtabmap_ros" type="rgbd_odometry">
+            <param name="frame_id" value="$(arg robot_namespace)/base"/>
+            
+            <remap from="rgb/image" to="$(arg robot_namespace)/camera/color/image_raw"/>
+            <remap from="rgb/camera_info" to="$(arg robot_namespace)/camera/color/camera_info"/>
+            <remap from="depth/image" to="$(arg robot_namespace)/camera/aligned_depth_to_color/image_raw"/>
+
+            <remap from="odom" to="$(arg robot_namespace)/odom/rgbd_visual"/>
+            <remap from="odom_info" to="$(arg robot_namespace)/odom/rgbd_visual_info"/>
+            <remap from="odom_last_frame" to="$(arg robot_namespace)/odom/rgbd_visual_last_frame"/>
+            <remap from="odom_local_map" to="$(arg robot_namespace)/odom/rgbd_visual_local_map"/>
+        </node>
+    </group>
+
+    <group if="$(eval arg('legged_twist'))">
+        <node name="$(arg robot_namespace)_legged_twist" pkg="unitree_legged_real" type="legged_twist" output="$(arg output)" args="$(arg robot_namespace)">
+            <param name="frequency" value="1000"/>
+        </node>
+    </group>
+
+    <node name="$(arg robot_namespace)_robot_localization" pkg="robot_localization" type="ekf_localization_node" clear_params="true">
+        <rosparam command="load" file="$(find robot_localization)/params/ekf_template.yaml" />
+        <param name="base_link_frame" value="$(arg robot_namespace)/base"/>
+
+        <param name="imu0" value="$(arg robot_namespace)/imu"/>
+        <rosparam param="imu0_config">[false, false, false,
+                                    true, true, true,
+                                    false, false, false,
+                                    false, false, false,
+                                    false, false, false]</rosparam>
+        
+        <param name="odom0" value="$(arg robot_namespace)/odom/rgbd_visual"/>
+        <rosparam param="odom0_config">[true, true, true,
+                                    true, true, true,
+                                    true, true, true,
+                                    true, true, true,
+                                    false, false, false]</rosparam>
+        
+        <param name="twist0" value="$(arg robot_namespace)/twist/legged"/>
+        <rosparam param="twist0_config">[false, false, false,
+                                    false, false, false,
+                                    true, true, true,
+                                    false, false, false,
+                                    false, false, false]</rosparam>
+
+        <param name="use_control" value="false"/>
+
+        <!-- Placeholder for output topic remapping -->
+        <remap from="odometry/filtered" to="$(arg robot_namespace)/odom/filtered"/>
+
+        <!-- <remap from="accel/filtered" to=""/> -->
+    </node>
+</launch>

@@ -8,7 +8,9 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     sensor_msgs
     unitree_legged_msgs
+    tf
 )
+find_package (Eigen3 REQUIRED NO_MODULE)
 
 catkin_package()
 
@@ -50,6 +52,10 @@ add_dependencies(ros_udp_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPOR
 add_executable(real_robot src/real_robot.cpp)
 target_link_libraries(real_robot ${EXTRA_LIBS} ${catkin_LIBRARIES} unitree_ros)
 add_dependencies(real_robot ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(legged_twist src/legged_twist.cpp)
+target_link_libraries(legged_twist ${catkin_LIBRARIES})
+add_dependencies(legged_twist ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} Eigen3::Eigen)
 
 # add_executable(example_walk src/exe/example_walk.cpp)
 # target_link_libraries(example_walk ${EXTRA_LIBS} ${catkin_LIBRARIES})

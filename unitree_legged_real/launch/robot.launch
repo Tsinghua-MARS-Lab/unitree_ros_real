@@ -12,7 +12,7 @@
     <arg name="publish_imu" default="false"/>
     <arg name="start_stand" default="false"/>
     <arg name="publish_joint_state" default="false"/>
-    <arg name="joint_state_freq" default="100.0"/>
+    <arg name="joint_state_freq" default="1000.0"/>
     <!-- camera configurations, only when func:=full and camera_mode!=none -->
     <arg name="camera_mode" default="none"/>
     <arg name="image_fps" default="30"/>

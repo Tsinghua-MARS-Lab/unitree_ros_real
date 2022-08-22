@@ -135,10 +135,10 @@ void UnitreeRos::imu_publish_callback(const ros::TimerEvent& event){
     ros_msg.header.seq = this->imu_publish_seq++;
     ros_msg.header.stamp = ros::Time::now();
     ros_msg.header.frame_id = this->robot_namespace_ + "/imu_link";
-    ros_msg.orientation.x = imu_ptr->quaternion[0];
-    ros_msg.orientation.y = imu_ptr->quaternion[1];
-    ros_msg.orientation.z = imu_ptr->quaternion[2];
-    ros_msg.orientation.w = imu_ptr->quaternion[3];
+    ros_msg.orientation.x = imu_ptr->quaternion[1];
+    ros_msg.orientation.y = imu_ptr->quaternion[2];
+    ros_msg.orientation.z = imu_ptr->quaternion[3];
+    ros_msg.orientation.w = imu_ptr->quaternion[0];
     // ros_msg.orientation_covariance unknown
     ros_msg.angular_velocity.x = imu_ptr->gyroscope[0];
     ros_msg.angular_velocity.y = imu_ptr->gyroscope[1];
