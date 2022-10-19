@@ -58,6 +58,8 @@ public:
     ros::Timer joint_state_publish_timer;
 
 protected:
+    void get_params();
+
     // For simplicity, some states and commands must be processed and estimate
     bool set_gaitType_srv_callback(
         unitree_legged_srvs::SetGaitType::Request &req,
@@ -88,13 +90,7 @@ public:
             std::string robot_namespace,                    // Every topic from this node must have a namespace as prefix.
             const float udp_duration,                       // unit (sec), the duration to call udp related methods.
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
-            float position_protect_limit,
-            int power_protect_level,
-            bool cmd_check,
-            bool start_stand,
-            bool publish_imu,
-            bool publish_joint_state,
-            bool dryrun                                     // If true, does not send the udp message in udp_send() but do everything else.
+            ros::NodeHandle nh
         );
     void publisher_init();
     void server_init();

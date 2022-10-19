@@ -16,6 +16,7 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <tf/transform_listener.h>
+#include "std_msgs/Int8.h"
 #include "sensor_msgs/Imu.h"
 #include "geometry_msgs/TwistWithCovarianceStamped.h"
 #include <unitree_legged_msgs/LowState.h>
@@ -40,9 +41,12 @@ public:
     ros::Subscriber low_state_subscriber;
     ros::Subscriber imu_subscriber;
     ros::Publisher twist_publisher;
+    ros::Publisher feet_touch_publisher;
     ros::Timer main_loop_timer;
 
 protected:
+    void get_params();
+
     // Some constants that are not designed to be updated
     const std::string imu_link = "/imu_link";
     const std::string calf_link_template = "/{}_calf";
@@ -61,8 +65,8 @@ protected:
     
 public:
     LeggedTwist(
-        int frequency,
-        std::string robot_namespace
+        std::string robot_namespace,
+        ros::NodeHandle nh
     );
 };
 

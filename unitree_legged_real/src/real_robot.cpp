@@ -30,6 +30,13 @@ bool check_until_timeout(
     return (*buffer) == (*target);
 }
 
+void UnitreeRos::get_params()
+{
+    
+    this->ros_handle.param<bool>("publish_imu", this->publish_imu, false);
+    this->ros_handle.param<bool>("publish_joint_state", this->publish_joint_state, false);
+}
+
 bool UnitreeRos::set_gaitType_srv_callback(
     unitree_legged_srvs::SetGaitType::Request &req,
     unitree_legged_srvs::SetGaitType::Response &res
@@ -134,7 +141,7 @@ void UnitreeRos::imu_publish_callback(const ros::TimerEvent& event){
     // fill ros message
     ros_msg.header.seq = this->imu_publish_seq++;
     ros_msg.header.stamp = ros::Time::now();
-    ros_msg.header.frame_id = this->robot_namespace_ + "/imu_link";
+    ros_msg.header.frame_id = this->robot_namespace + "/imu_link";
     ros_msg.orientation.x = imu_ptr->quaternion[1];
     ros_msg.orientation.y = imu_ptr->quaternion[2];
     ros_msg.orientation.z = imu_ptr->quaternion[3];
@@ -224,20 +231,20 @@ void UnitreeRos::joint_state_publish_callback(const ros::TimerEvent& event)
     sensor_msgs::JointState ros_msg;
     ros_msg.header.seq = this->joint_state_publish_seq++;
     ros_msg.header.stamp = ros::Time::now();
-    ros_msg.header.frame_id = this->robot_namespace_ + "/base";
+    ros_msg.header.frame_id = this->robot_namespace + "/base";
     // 12 joint names
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FR_hip_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FR_thigh_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FR_calf_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FL_hip_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FL_thigh_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/FL_calf_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RR_hip_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RR_thigh_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RR_calf_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RL_hip_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RL_thigh_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace_ + "/RL_calf_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/FR_hip_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/FR_thigh_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/FR_calf_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/FL_hip_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/FL_thigh_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/FL_calf_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/RR_hip_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/RR_thigh_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/RR_calf_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/RL_hip_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/RL_thigh_joint"));
+    ros_msg.name.push_back(std::string(this->robot_namespace + "/RL_calf_joint"));
     // 12 joint positions
     for (int i (0); i < 12; i++) ros_msg.position.push_back(this->low_state_buffer.motorState[i].q);
     // 12 joint velocites
@@ -252,27 +259,16 @@ UnitreeRos::UnitreeRos(
     std::string robot_namespace,
     const float udp_duration,
     uint8_t level,
-    float position_protect_limit,
-    int power_protect_level,
-    bool cmd_check,
-    bool start_stand,
-    bool publish_imu,
-    bool publish_joint_state,
-    bool dryrun
+    ros::NodeHandle nh
 ):
-    publish_imu(publish_imu),
-    publish_joint_state(publish_joint_state),
     RosUdpHandler(
         robot_namespace,
         udp_duration,
         level,
-        position_protect_limit,
-        power_protect_level,
-        cmd_check,
-        start_stand,
-        dryrun
+        nh
     )
 {
+    this->get_params();
     this->publisher_init();
     this->server_init();
     this->subscriber_init();
@@ -287,7 +283,7 @@ void UnitreeRos::publisher_init()
     if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->position_limit_publisher = this->ros_handle.advertise<std_msgs::Float32MultiArray>(
-            this->robot_namespace_ + "/position_limit", 1
+            this->robot_namespace + "/position_limit", 1
         );
         if (this->publish_joint_state)
             this->joint_state_publisher = this->ros_handle.advertise<sensor_msgs::JointState>(
@@ -296,10 +292,10 @@ void UnitreeRos::publisher_init()
     }
     if (this->publish_imu)
         this->imu_publisher = this->ros_handle.advertise<sensor_msgs::Imu>(
-            this->robot_namespace_ + "/imu", 1
+            this->robot_namespace + "/imu", 1
         );
     this->wirelessRemote_publisher = this->ros_handle.advertise<unitree_legged_msgs::WirelessRemote>(
-        this->robot_namespace_ + "/wireless_remote", 1
+        this->robot_namespace + "/wireless_remote", 1
     );
 }
 
@@ -308,7 +304,7 @@ void UnitreeRos::server_init()
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->set_gaitType_service = this->ros_handle.advertiseService(
-            this->robot_namespace_ + "/set_gaitType",
+            this->robot_namespace + "/set_gaitType",
             &UnitreeRos::set_gaitType_srv_callback,
             this
         );
@@ -320,19 +316,19 @@ void UnitreeRos::subscriber_init()
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->high_twist_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/body_motion_cmd",
+            this->robot_namespace + "/body_motion_cmd",
             10,
             &UnitreeRos::high_twist_callback,
             this
         );
         this->foot_raise_height_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/foot_raise_heigh_cmd",
+            this->robot_namespace + "/foot_raise_heigh_cmd",
             10,
             &UnitreeRos::foot_raise_height_callback,
             this
         );
         this->body_height_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/body_height_cmd",
+            this->robot_namespace + "/body_height_cmd",
             10,
             &UnitreeRos::body_height_callback,
             this
@@ -340,7 +336,7 @@ void UnitreeRos::subscriber_init()
     } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->low_motor_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/legs_cmd",
+            this->robot_namespace + "/legs_cmd",
             10,
             &UnitreeRos::low_motor_callback,
             this
@@ -384,34 +380,18 @@ int main(int argc, char **argv)
     ros::NodeHandle nh ("~");
 
     // get configuration using rosparam, use ros launch to start this node!!!
-    bool dryrun; nh.param<bool>("dryrun", dryrun, true);
     float udp_duration; nh.param<float>("udp_duration", udp_duration, 0.01);
-    bool cmd_check; nh.param<bool>("cmd_check", cmd_check, true);
     std::string ctrl_level_s; nh.getParam("ctrl_level", ctrl_level_s);
     bool use_low_level = (ctrl_level_s.compare("low") == 0);
     uint8_t level = UNITREE_LEGGED_SDK::HIGHLEVEL;
     if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
-    float position_protect_limit; nh.param<float>("position_protect_limit", position_protect_limit, 0.087);
-    int power_protect_level; nh.param<int>("power_protect_level", power_protect_level, 1);
-    bool publish_imu; nh.param<bool>("publish_imu", publish_imu, false);
-    bool start_stand; nh.param<bool>("start_stand", start_stand, true);
-    bool publish_joint_state; nh.param<bool>("publish_joint_state", publish_joint_state, false);
-
-    if (start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
-    else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
 
     // construct and initialize this ros node
     UnitreeRos unitree_ros_node(
         robot_namespace,
         udp_duration,
         level,
-        position_protect_limit,
-        power_protect_level,
-        cmd_check,
-        start_stand,
-        publish_imu,
-        publish_joint_state,
-        dryrun
+        nh
     );
     ros::spin();
     return 0;

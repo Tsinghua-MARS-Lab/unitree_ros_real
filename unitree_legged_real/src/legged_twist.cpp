@@ -11,6 +11,12 @@
 
 #include "legged_twist.h"
 
+void LeggedTwist::get_params()
+{
+    this->ros_handle.param<int>("frequency", this->frequency, 100);
+    this->ros_handle.param<int>("foot_touch_threshold", this->foot_touch_threshold, 20);
+}
+
 Eigen::Matrix3d rotation_matrix_x(double q)
 {
     Eigen::Matrix3d mat;
@@ -140,23 +146,31 @@ void LeggedTwist::main_loop_callback(const ros::TimerEvent& event)
         // NOTE: DO NOT use angular attribute in the twist. It is not implemented.
         this->twist_publisher.publish(ros_msg);
     }
+    std_msgs::Int8 feet_count_msg; feet_count_msg.data = valid_legs_count;
+    this->feet_touch_publisher.publish(feet_count_msg);
 }
 
 LeggedTwist::LeggedTwist(
-    int frequency,
-    std::string robot_namespace
+    std::string robot_namespace,
+    ros::NodeHandle nh
 ):
-    frequency(frequency),
-    robot_namespace(robot_namespace)
+    robot_namespace(robot_namespace),
+    ros_handle(nh)
 {
+    this->get_params();
+
     this->low_state_subscriber = this->ros_handle.subscribe(
-        this->robot_namespace + "/low_state",
+        "low_state",
         10,
         &LeggedTwist::low_state_callback,
         this
     );
+    this->feet_touch_publisher = this->ros_handle.advertise<std_msgs::Int8>(
+        "num_feet_touches",
+        1
+    );
     this->twist_publisher = this->ros_handle.advertise<geometry_msgs::TwistWithCovarianceStamped>(
-        this->robot_namespace + "/twist/legged",
+        "twist",
         10
     );
 
@@ -173,12 +187,10 @@ int main(int argc, char** argv)
     ros::init(argc, argv, robot_namespace);
     ros::NodeHandle nh ("~");
 
-    int frequency; nh.param<int>("frequency", frequency, 100);
-
     // construct and initialize this ros node
     LeggedTwist legged_twist_estimator(
-        frequency,
-        robot_namespace
+        robot_namespace,
+        nh
     );
     ros::spin();
     return 0;

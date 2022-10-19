@@ -27,18 +27,18 @@
 class RosUdpHandler
 {
 public:
-    std::string robot_namespace_;
+    std::string robot_namespace;
     uint8_t ctrl_level;
-    bool dryrun_;
+    bool dryrun; // If true, does not send the udp message in udp_send() but do everything else.
     UNITREE_LEGGED_SDK::UDP udp;
-    float udp_duration_;
-    bool cmd_check; // if set, /*_cmd_checker publisher will publish the from buffer at each udpSend()
+    float udp_duration;
+    bool cmd_check; // if set, /*cmd_checker publisher will publish the from buffer at each udpSend()
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_send;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
     
     UNITREE_LEGGED_SDK::Safety safe;
-    float position_protect_limit;
-    int low_power_protect_level;
+    float position_protect_limit; // Please check safety.h, 0.0 is the least limit
+    int power_protect_level; // Refer to unitree_legged_sdk/safety.h
     float low_cmd_default_tau = 0.65f;
     bool start_stand; // if true, the motor will be initialized to mode 10, otherwise mode 0.
 
@@ -58,6 +58,7 @@ public:
     ros::Publisher state_publisher;
 
 protected:
+    void get_params();
     void udp_init(uint8_t level);
     void udp_start();
     // If dryrun, do everything except udp.send(). Publish the message to send everytime in udp_send().
@@ -83,11 +84,7 @@ public:
             std::string robot_namespace,                    // Every topic from this node must have a namespace as prefix.
             const float udp_duration,                       // unit (sec), the duration to call udp related methods.
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
-            float position_protect_limit,                   // Please check safety.h, 0.0 is the least limit
-            int power_protect_level,                        // Refer to unitree_legged_sdk/safety.h
-            bool cmd_check,
-            bool start_stand,                               // If true, defualt motor mode is 10, otherwise 0.
-            bool dryrun                                     // If true, does not send the udp message in udp_send() but do everything else.
+            ros::NodeHandle nh
         );
 };
 

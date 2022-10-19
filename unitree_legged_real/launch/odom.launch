@@ -22,6 +22,11 @@
     <group if="$(eval arg('legged_twist'))">
         <node name="$(arg robot_namespace)_legged_twist" pkg="unitree_legged_real" type="legged_twist" output="$(arg output)" args="$(arg robot_namespace)">
             <param name="frequency" value="1000"/>
+            <param name="foot_touch_threshold" value="5"/>
+
+            <remap from="$(arg robot_namespace)_legged_twist/low_state" to="/$(arg robot_namespace)/low_state"/>
+
+            <remap from="$(arg robot_namespace)_legged_twist/twist" to="/$(arg robot_namespace)/twist/legged"/>
         </node>
     </group>
 

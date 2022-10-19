@@ -10,6 +10,19 @@
  */
 #include "ros_udp_node.h"
 
+void RosUdpHandler::get_params()
+{
+    
+    this->ros_handle.getParam("cmd_check", this->cmd_check);
+    this->ros_handle.param<float>("position_protect_limit", this->position_protect_limit, 0.087);
+    this->ros_handle.param<int>("power_protect_level", this->power_protect_level, 1);
+    this->ros_handle.param<bool>("dryrun", this->dryrun, true);
+    this->ros_handle.param<bool>("start_stand", this->start_stand, true);
+
+    if (this->start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
+    else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
+}
+
 void RosUdpHandler::udp_init(uint8_t level)
 {
     if (level == UNITREE_LEGGED_SDK::HIGHLEVEL)
@@ -57,7 +70,7 @@ void RosUdpHandler::udp_send()
         if (this->low_cmd_metadata_get)
         {   // means the los_state_buffer is valid, the following protection should be running.
             this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
-            this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->low_power_protect_level);
+            this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->power_protect_level);
         }
         // Publish cmd_check if needed
         if (this->cmd_check)
@@ -67,7 +80,7 @@ void RosUdpHandler::udp_send()
         }
         this->udp.SetSend(this->low_cmd_buffer);
     }
-    if (!this->dryrun_)
+    if (!this->dryrun)
         this->udp.Send();
 }
 
@@ -204,21 +217,21 @@ void RosUdpHandler::publisher_init()
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::HighState>(
-            this->robot_namespace_ + "/high_state", 1
+            this->robot_namespace + "/high_state", 1
         );
         if (this->cmd_check)
             this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::HighCmd>(
-                this->robot_namespace_ + "/high_cmd_check", 1
+                this->robot_namespace + "/high_cmd_check", 1
             );
     }
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::LowState>(
-            this->robot_namespace_ + "/low_state", 1
+            this->robot_namespace + "/low_state", 1
         );
         if (this->cmd_check)
             this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::LowCmd>(
-                this->robot_namespace_ + "/low_cmd_check", 1
+                this->robot_namespace + "/low_cmd_check", 1
             );
     }
 }
@@ -227,14 +240,14 @@ void RosUdpHandler::subscriber_init()
 {
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
         this->cmd_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/high_cmd",
+            this->robot_namespace + "/high_cmd",
             10,
             &RosUdpHandler::high_cmd_callback,
             this
         );
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
         this->cmd_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace_ + "/low_cmd",
+            this->robot_namespace + "/low_cmd",
             10,
             &RosUdpHandler::low_cmd_callback,
             this
@@ -245,23 +258,15 @@ RosUdpHandler::RosUdpHandler(
     std::string robot_namespace,
     const float udp_duration,
     uint8_t level,
-    float position_protect_limit,
-    int power_protect_level,
-    bool cmd_check,
-    bool start_stand,
-    bool dryrun
+    ros::NodeHandle nh
 ):
     safe(UNITREE_LEGGED_SDK::LeggedType::A1),
     // udp(8091, "192.168.123.161", 8082, sizeof(UNITREE_LEGGED_SDK::HighCmd), sizeof(UNITREE_LEGGED_SDK::HighState)),
     udp(level),
-    robot_namespace_(robot_namespace),
-    udp_duration_(udp_duration),
+    robot_namespace(robot_namespace),
+    udp_duration(udp_duration),
     ctrl_level(level),
-    position_protect_limit(position_protect_limit),
-    low_power_protect_level(power_protect_level),
-    cmd_check(cmd_check),
-    start_stand(start_stand),
-    dryrun_(dryrun),
+    ros_handle(nh),
     loop_udp_send("udp_send", udp_duration, 3, boost::bind(&RosUdpHandler::udp_send, this)),
     loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this))
 {
@@ -280,11 +285,12 @@ RosUdpHandler::RosUdpHandler(
     //     ROS_INFO_ONCE("Setting up UDP with LOWLEVEL control");
     //     this->udp = UNITREE_LEGGED_SDK::UDP(level);
     // }
+    this->get_params();
     this->udp_init(level);
     ROS_INFO("Udp initialized");
     // set ros parameters
-    this->ros_handle.setParam(this->robot_namespace_ + "/PosStopF", UNITREE_LEGGED_SDK::PosStopF);
-    this->ros_handle.setParam(this->robot_namespace_ + "/VelStopF", UNITREE_LEGGED_SDK::VelStopF);
+    this->ros_handle.setParam(this->robot_namespace + "/PosStopF", UNITREE_LEGGED_SDK::PosStopF);
+    this->ros_handle.setParam(this->robot_namespace + "/VelStopF", UNITREE_LEGGED_SDK::VelStopF);
     this->publisher_init();
     this->subscriber_init();
     this->udp_start();
@@ -298,30 +304,18 @@ int main(int argc, char **argv)
     ros::NodeHandle nh ("~");
 
     // get configuration using rosparam, use ros launch to start this node!!!
-    bool dryrun; nh.param<bool>("dryrun", dryrun, true);
     float udp_duration; nh.param<float>("udp_duration", udp_duration, 0.01);
-    bool cmd_check; nh.getParam("cmd_check", cmd_check);
     std::string ctrl_level_s; nh.getParam("ctrl_level", ctrl_level_s);
     bool use_low_level = (ctrl_level_s.compare("low") == 0);
     uint8_t level = UNITREE_LEGGED_SDK::HIGHLEVEL;
     if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
-    float position_protect_limit; nh.param<float>("position_protect_limit", position_protect_limit, 0.087);
-    int power_protect_level; nh.param<int>("power_protect_level", power_protect_level, 1);
-    bool start_stand; nh.param<bool>("start_stand", start_stand, true);
-
-    if (start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
-    else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
 
     // construct and initialize this ros node
     RosUdpHandler ros_udp_handler(
         robot_namespace,
         udp_duration,
         level,
-        position_protect_limit,
-        power_protect_level,
-        cmd_check,
-        start_stand,
-        dryrun
+        nh
     );
     ros::spin();
     return 0;
