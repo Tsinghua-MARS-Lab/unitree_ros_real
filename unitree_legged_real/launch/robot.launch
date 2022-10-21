@@ -6,13 +6,14 @@
     <arg name="cmd_check" default="true"/>
     <arg name="ctrl_level" default="low"/>
     <arg name="position_protect_limit" default="0.087"/>
-    <arg name="power_protect_level" default="1"/>
+    <arg name="power_protect_level" default="4"/>
     <arg name="output" default="screen"/>
     <arg name="func" default="full"/>
     <arg name="publish_imu" default="false"/>
     <arg name="start_stand" default="false"/>
     <arg name="publish_joint_state" default="false"/>
     <arg name="joint_state_freq" default="1000.0"/>
+    <arg name="cmd_lost_timelimit" default= "0.1"/>
     <!-- camera configurations, only when func:=full and camera_mode!=none -->
     <arg name="camera_mode" default="none"/>
     <arg name="image_fps" default="30"/>
@@ -30,6 +31,7 @@
             <param name="publish_imu" type="bool" value="$(arg publish_imu)"/>
             <param name="start_stand" type="bool" value="$(arg start_stand)"/>
             <param name="publish_joint_state" type="bool" value="$(arg publish_joint_state)"/>
+            <param name="cmd_lost_timelimit" type="double" value="$(arg cmd_lost_timelimit)"/>
         </node>
 
         <group if="$(eval arg('publish_joint_state'))">

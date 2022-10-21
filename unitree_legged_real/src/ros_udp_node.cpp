@@ -18,6 +18,7 @@ void RosUdpHandler::get_params()
     this->ros_handle.param<int>("power_protect_level", this->power_protect_level, 1);
     this->ros_handle.param<bool>("dryrun", this->dryrun, true);
     this->ros_handle.param<bool>("start_stand", this->start_stand, true);
+    this->ros_handle.param<float>("cmd_lost_timelimit", this->cmd_lost_timelimit, 0.1);
 
     if (this->start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
     else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
@@ -50,6 +51,7 @@ void RosUdpHandler::udp_start()
     }
     this->loop_udp_recv.start();
     this->loop_udp_send.start();
+    this->cmd_refresh_time = ros::Time::now();
 }
 
 void RosUdpHandler::udp_send()
@@ -191,13 +193,36 @@ void RosUdpHandler::low_cmd_metadata_update()
 void RosUdpHandler::high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg)
 {
     this->high_cmd_buffer = rosMsg2Cmd(msg);
-    this->high_cmd_get = true;
+    this->cmd_refresh_time = ros::Time::now();
 }
 
 void RosUdpHandler::low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg)
 {
     this->low_cmd_buffer = rosMsg2Cmd(msg);
-    this->low_cmd_get = true;
+    this->cmd_refresh_time = ros::Time::now();
+}
+
+void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
+{
+    ros::Duration time_elapsed = ros::Time::now() - this->cmd_refresh_time;
+    if (this->cmd_lost_timelimit > 0
+        && time_elapsed.toSec() > this->cmd_lost_timelimit
+        && !this->cmd_refresh_time.is_zero()
+    )
+    { // assuming command lost, set low_cmd_buffer
+        if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+            for (int i(0); i < 12; i++)
+            {
+                this->low_cmd_buffer.motorCmd[i].q = this->low_state_buffer.motorState[i].q;
+                this->low_cmd_buffer.motorCmd[i].dq = 0.;
+                this->low_cmd_buffer.motorCmd[i].tau = 0.;
+            }
+
+        // overwrite refresh time as a marker
+        ROS_INFO("Cmd lost, freeze the robot");
+        this->cmd_refresh_time.nsec = 0;
+        this->cmd_refresh_time.sec = 0;
+    }
 }
 
 void RosUdpHandler::high_state_publish()
@@ -217,21 +242,21 @@ void RosUdpHandler::publisher_init()
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::HighState>(
-            this->robot_namespace + "/high_state", 1
+            "high_state", 1
         );
         if (this->cmd_check)
             this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::HighCmd>(
-                this->robot_namespace + "/high_cmd_check", 1
+                "high_cmd_check", 1
             );
     }
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::LowState>(
-            this->robot_namespace + "/low_state", 1
+            "low_state", 1
         );
         if (this->cmd_check)
             this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::LowCmd>(
-                this->robot_namespace + "/low_cmd_check", 1
+                "low_cmd_check", 1
             );
     }
 }
@@ -240,18 +265,30 @@ void RosUdpHandler::subscriber_init()
 {
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
         this->cmd_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace + "/high_cmd",
+            "high_cmd",
             10,
             &RosUdpHandler::high_cmd_callback,
             this
         );
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
         this->cmd_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace + "/low_cmd",
+            "low_cmd",
             10,
             &RosUdpHandler::low_cmd_callback,
             this
         );
+}
+
+void RosUdpHandler::timer_init()
+{
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    {
+        this->cmd_lost_check_timer = this->ros_handle.createTimer(
+            ros::Duration(this->cmd_lost_timelimit),
+            &RosUdpHandler::cmd_lost_check_callback,
+            this
+        );
+    }
 }
 
 RosUdpHandler::RosUdpHandler(
@@ -288,11 +325,12 @@ RosUdpHandler::RosUdpHandler(
     this->get_params();
     this->udp_init(level);
     ROS_INFO("Udp initialized");
-    // set ros parameters
+    // set ros parameters and timers
     this->ros_handle.setParam(this->robot_namespace + "/PosStopF", UNITREE_LEGGED_SDK::PosStopF);
     this->ros_handle.setParam(this->robot_namespace + "/VelStopF", UNITREE_LEGGED_SDK::VelStopF);
     this->publisher_init();
     this->subscriber_init();
+    this->timer_init();
     this->udp_start();
     ROS_INFO("RosUdpHandler constructed and started");
 }

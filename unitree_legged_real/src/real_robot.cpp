@@ -100,6 +100,7 @@ bool UnitreeRos::set_high_speedLevel_srv_callback(
 
 void UnitreeRos::high_twist_callback(const geometry_msgs::Twist::ConstPtr &msg)
 {
+    this->cmd_refresh_time = ros::Time::now();
     this->high_cmd_buffer.velocity[0] = msg->linear.x;
     this->high_cmd_buffer.velocity[1] = msg->linear.y;
     this->high_cmd_buffer.yawSpeed = msg->angular.z;
@@ -117,6 +118,7 @@ void UnitreeRos::body_height_callback(const std_msgs::Float32::ConstPtr &msg)
 
 void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr &msg)
 {
+    this->cmd_refresh_time = ros::Time::now();
     for (int i = 0; i < 12; i++)
     {
         this->low_cmd_buffer.motorCmd[i].mode = msg->cmd[i].mode;
@@ -283,19 +285,19 @@ void UnitreeRos::publisher_init()
     if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->position_limit_publisher = this->ros_handle.advertise<std_msgs::Float32MultiArray>(
-            this->robot_namespace + "/position_limit", 1
+            "position_limit", 1
         );
         if (this->publish_joint_state)
             this->joint_state_publisher = this->ros_handle.advertise<sensor_msgs::JointState>(
-                "joint_states", 1
+                "/joint_states", 1
             );
     }
     if (this->publish_imu)
         this->imu_publisher = this->ros_handle.advertise<sensor_msgs::Imu>(
-            this->robot_namespace + "/imu", 1
+            "imu", 1
         );
     this->wirelessRemote_publisher = this->ros_handle.advertise<unitree_legged_msgs::WirelessRemote>(
-        this->robot_namespace + "/wireless_remote", 1
+        "wireless_remote", 1
     );
 }
 
@@ -304,7 +306,7 @@ void UnitreeRos::server_init()
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->set_gaitType_service = this->ros_handle.advertiseService(
-            this->robot_namespace + "/set_gaitType",
+            "set_gaitType",
             &UnitreeRos::set_gaitType_srv_callback,
             this
         );
@@ -316,19 +318,19 @@ void UnitreeRos::subscriber_init()
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->high_twist_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace + "/body_motion_cmd",
+            "body_motion_cmd",
             10,
             &UnitreeRos::high_twist_callback,
             this
         );
         this->foot_raise_height_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace + "/foot_raise_heigh_cmd",
+            "foot_raise_heigh_cmd",
             10,
             &UnitreeRos::foot_raise_height_callback,
             this
         );
         this->body_height_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace + "/body_height_cmd",
+            "body_height_cmd",
             10,
             &UnitreeRos::body_height_callback,
             this
@@ -336,7 +338,7 @@ void UnitreeRos::subscriber_init()
     } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->low_motor_subscriber = this->ros_handle.subscribe(
-            this->robot_namespace + "/legs_cmd",
+            "legs_cmd",
             10,
             &UnitreeRos::low_motor_callback,
             this

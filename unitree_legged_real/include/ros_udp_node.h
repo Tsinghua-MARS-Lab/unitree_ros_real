@@ -33,6 +33,8 @@ public:
     UNITREE_LEGGED_SDK::UDP udp;
     float udp_duration;
     bool cmd_check; // if set, /*cmd_checker publisher will publish the from buffer at each udpSend()
+    ros::Time cmd_refresh_time;
+    float cmd_lost_timelimit; // (in sec) If system does not recieve LegsCmd or LowCmd within this timelimit, robot will be in safety position.
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_send;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
     
@@ -45,17 +47,16 @@ public:
     UNITREE_LEGGED_SDK::HighCmd high_cmd_buffer = {0};
     UNITREE_LEGGED_SDK::HighState high_state_buffer = {0};
     bool high_cmd_metadata_get = false;
-    bool high_cmd_get = false; // set to true when a proper cmd is recieved from algorithm and being handled.
 
     UNITREE_LEGGED_SDK::LowCmd low_cmd_buffer = {0};
     UNITREE_LEGGED_SDK::LowState low_state_buffer = {0};
     bool low_cmd_metadata_get = false;
-    bool low_cmd_get = false; // set to true when a proper cmd is recieved from algorithm and being handled.
 
     ros::NodeHandle ros_handle;
     ros::Subscriber cmd_subscriber;
     ros::Publisher cmd_checker;
     ros::Publisher state_publisher;
+    ros::Timer cmd_lost_check_timer;
 
 protected:
     void get_params();
@@ -74,10 +75,12 @@ protected:
     void high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg);
     void low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg);
     // Some helper functions
+    void cmd_lost_check_callback(const ros::TimerEvent& event);
     void high_state_publish();
     void low_state_publish();
     void publisher_init();
     void subscriber_init();
+    void timer_init();
 
 public:
     RosUdpHandler(
