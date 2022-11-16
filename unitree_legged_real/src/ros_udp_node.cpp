@@ -130,18 +130,18 @@ void RosUdpHandler::set_default_low_cmd()
     else
         for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
     // set q (position)
-    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_0].q = -0.3;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_0].q = -0.0;
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_1].q = 0.9;
-    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_2].q = -1.6;
-    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_0].q = 0.3;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FR_2].q = -1.8;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_0].q = 0.0;
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_1].q = 0.9;
-    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_2].q = -1.6;
-    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_0].q = -0.3;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::FL_2].q = -1.8;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_0].q = -0.0;
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_1].q = 0.9;
-    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_2].q = -1.6;
-    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_0].q = 0.3;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RR_2].q = -1.8;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_0].q = 0.0;
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_1].q = 0.9;
-    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_2].q = -1.6;
+    this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_2].q = -1.8;
     // set dq (velocity)
     for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].dq = 0.;
     // set tau (torque)
