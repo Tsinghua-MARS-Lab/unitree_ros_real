@@ -10,7 +10,7 @@ MotorState[20] motorState
 int16[4] footForce	
 int16[4] footForceEst	
 uint32 tick						
-uint8[40] wirelessRemote 
+WirelessRemote wirelessRemote 
 uint32 reserve
 
 uint32 crc

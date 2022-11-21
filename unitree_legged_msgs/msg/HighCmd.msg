@@ -15,7 +15,7 @@ float32[3] euler
 float32[2] velocity 
 float32 yawSpeed				   
 LED[4] led
-uint8[40] wirelessRemote
+WirelessRemote wirelessRemote
 uint32 reserve
 
 uint32 crc

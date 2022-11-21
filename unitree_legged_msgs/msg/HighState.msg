@@ -19,7 +19,7 @@ Cartesian[4] footPosition2Body
 Cartesian[4] footSpeed2Body	
 int16[4] footForce
 int16[4] footForceEst
-uint8[40] wirelessRemote
+WirelessRemote wirelessRemote
 uint32 reserve
 
 uint32 crc
