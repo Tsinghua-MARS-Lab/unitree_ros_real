@@ -41,40 +41,13 @@
             </include>
         </group>
 
-        <group if="$(eval arg('camera_mode') == 'raw')">
-            <include file="$(find realsense2_camera)/launch/rs_camera.launch">
-                <arg name="camera" value="$(arg robot_namespace)/camera"/>
-                <arg name="color_fps" value="$(arg image_fps)"/>
-                <arg name="depth_fps" value="$(arg image_fps)"/>
-                <arg name="color_width" value="$(arg image_width)"/>
-                <arg name="color_height" value="$(arg image_height)"/>
-                <arg name="depth_width" value="$(arg image_width)"/>
-                <arg name="depth_height" value="$(arg image_height)"/>
-            </include>
-        </group>
-        <group if="$(eval arg('camera_mode') == 'aligned')">
-            <include file="$(find realsense2_camera)/launch/rs_camera.launch">
-                <arg name="camera" value="$(arg robot_namespace)/camera"/>
-                <arg name="align_depth" value="true"/>
-                <arg name="color_fps" value="$(arg image_fps)"/>
-                <arg name="depth_fps" value="$(arg image_fps)"/>
-                <arg name="color_width" value="$(arg image_width)"/>
-                <arg name="color_height" value="$(arg image_height)"/>
-                <arg name="depth_width" value="$(arg image_width)"/>
-                <arg name="depth_height" value="$(arg image_height)"/>
-            </include>
-        </group>
-        <group if="$(eval arg('camera_mode') == 'pointcloud')">
-            <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
-                <arg name="camera" value="$(arg robot_namespace)/camera"/>
-                <arg name="color_fps" value="$(arg image_fps)"/>
-                <arg name="depth_fps" value="$(arg image_fps)"/>
-                <arg name="color_width" value="$(arg image_width)"/>
-                <arg name="color_height" value="$(arg image_height)"/>
-                <arg name="depth_width" value="$(arg image_width)"/>
-                <arg name="depth_height" value="$(arg image_height)"/>
-            </include>
-        </group>
+        <include file="$(find unitree_legged_real)/launch/camera.launch" if="$(eval arg('camera_mode') != 'none')">
+            <arg name="robot_namespace" value="$(arg robot_namespace)"/>
+            <arg name="camera_mode" value="$(arg camera_mode)"/>
+            <arg name="image_fps" value="$(arg image_fps)"/>
+            <arg name="image_width" value="$(arg image_width)"/>
+            <arg name="image_height" value="$(arg image_height)"/>
+        </include>
     </group>
 
     <group if="$(eval arg('func') == 'basic')">

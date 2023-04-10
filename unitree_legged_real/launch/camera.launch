@@ -1,0 +1,42 @@
+<launch>
+    <arg name="robot_namespace" default="a112138"/>
+    <arg name="camera_mode" default="none"/>
+    <arg name="image_fps" default="30"/>
+    <arg name="image_width" default="640"/>
+    <arg name="image_height" default="480"/>
+
+    <group if="$(eval arg('camera_mode') == 'raw')">
+        <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+            <arg name="camera" value="$(arg robot_namespace)/camera"/>
+            <arg name="color_fps" value="$(arg image_fps)"/>
+            <arg name="depth_fps" value="$(arg image_fps)"/>
+            <arg name="color_width" value="$(arg image_width)"/>
+            <arg name="color_height" value="$(arg image_height)"/>
+            <arg name="depth_width" value="$(arg image_width)"/>
+            <arg name="depth_height" value="$(arg image_height)"/>
+        </include>
+    </group>
+    <group if="$(eval arg('camera_mode') == 'aligned')">
+        <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+            <arg name="camera" value="$(arg robot_namespace)/camera"/>
+            <arg name="align_depth" value="true"/>
+            <arg name="color_fps" value="$(arg image_fps)"/>
+            <arg name="depth_fps" value="$(arg image_fps)"/>
+            <arg name="color_width" value="$(arg image_width)"/>
+            <arg name="color_height" value="$(arg image_height)"/>
+            <arg name="depth_width" value="$(arg image_width)"/>
+            <arg name="depth_height" value="$(arg image_height)"/>
+        </include>
+    </group>
+    <group if="$(eval arg('camera_mode') == 'pointcloud')">
+        <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+            <arg name="camera" value="$(arg robot_namespace)/camera"/>
+            <arg name="color_fps" value="$(arg image_fps)"/>
+            <arg name="depth_fps" value="$(arg image_fps)"/>
+            <arg name="color_width" value="$(arg image_width)"/>
+            <arg name="color_height" value="$(arg image_height)"/>
+            <arg name="depth_width" value="$(arg image_width)"/>
+            <arg name="depth_height" value="$(arg image_height)"/>
+        </include>
+    </group>
+</launch>
