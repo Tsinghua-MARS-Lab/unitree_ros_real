@@ -19,6 +19,7 @@
     <arg name="image_fps" default="30"/>
     <arg name="image_width" default="640"/>
     <arg name="image_height" default="480"/>
+    <arg name="depth_filter" default="spatial,temporal,hole_filling"/>
 
     <group if="$(eval arg('func') == 'full')">
         <node name="$(arg robot_namespace)" pkg="unitree_legged_real" type="real_robot" output="$(arg output)" args="$(arg robot_namespace)">
@@ -47,6 +48,7 @@
             <arg name="image_fps" value="$(arg image_fps)"/>
             <arg name="image_width" value="$(arg image_width)"/>
             <arg name="image_height" value="$(arg image_height)"/>
+            <arg name="filter" value="$(arg depth_filter)"/>
         </include>
     </group>
 
