@@ -23,6 +23,7 @@ add_message_files(
   RemoteComponents.msg
   RemoteSwitch.msg
   WirelessRemote.msg
+  Float32MultiArrayStamped.msg
 )
 
 generate_messages(
