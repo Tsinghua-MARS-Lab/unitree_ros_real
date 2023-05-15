@@ -18,7 +18,10 @@ void RosUdpHandler::get_params()
     this->ros_handle.param<int>("power_protect_level", this->power_protect_level, 1);
     this->ros_handle.param<bool>("dryrun", this->dryrun, true);
     this->ros_handle.param<bool>("start_stand", this->start_stand, true);
-    this->ros_handle.param<float>("cmd_lost_timelimit", this->cmd_lost_timelimit, 0.1);
+    this->ros_handle.param<float>("cmd_lost_timelimit", this->cmd_lost_timelimit, 0.05);
+    this->ros_handle.param<bool>("freeze_lost", this->freeze_lost, true);
+    this->ros_handle.param<float>("pitch_protect_limit", this->pitch_protect_limit, -1.);
+    this->ros_handle.param<float>("roll_protect_limit", this->roll_protect_limit, -1.);
 
     if (this->start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
     else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
@@ -56,6 +59,7 @@ void RosUdpHandler::udp_start()
 
 void RosUdpHandler::udp_send()
 {
+    bool robot_safe (true);
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->udp.SetSend(this->high_cmd_buffer);
@@ -74,6 +78,19 @@ void RosUdpHandler::udp_send()
             this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
             this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->power_protect_level);
         }
+        // Protections implemented by this program
+        if (this->pitch_protect_limit > 0. && (abs(this->low_state_buffer.imu.rpy[1]) > this->pitch_protect_limit))
+        {
+            ROS_FATAL("Robot unsafe, pitch out of limit to: %f rads.", (this->low_state_buffer.imu.rpy[1]));
+            for (int i (0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
+            robot_safe = false;
+        }
+        if (this->roll_protect_limit > 0. && (abs(this->low_state_buffer.imu.rpy[0]) > this->roll_protect_limit))
+        {
+            ROS_FATAL("Robot unsafe, roll out of limit to: %f rads.", (this->low_state_buffer.imu.rpy[0]));
+            for (int i (0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
+            robot_safe = false;
+        }
         // Publish cmd_check if needed
         if (this->cmd_check)
         {
@@ -84,6 +101,11 @@ void RosUdpHandler::udp_send()
     }
     if (!this->dryrun)
         this->udp.Send();
+    if (!robot_safe)
+    {
+        ROS_FATAL("Robot unsafe, exit the program.");
+        ros::shutdown();
+    }
 }
 
 void RosUdpHandler::udp_recv()
@@ -210,18 +232,31 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
         && !this->cmd_refresh_time.is_zero()
     )
     { // assuming command lost, set low_cmd_buffer
-        if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+        if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL && this->freeze_lost)
+        {
+            // Send command to freeze the robot
             for (int i(0); i < 12; i++)
             {
                 this->low_cmd_buffer.motorCmd[i].q = this->low_state_buffer.motorState[i].q;
                 this->low_cmd_buffer.motorCmd[i].dq = 0.;
                 this->low_cmd_buffer.motorCmd[i].tau = 0.;
             }
-
-        // overwrite refresh time as a marker
-        ROS_INFO("Cmd lost, freeze the robot");
-        this->cmd_refresh_time.nsec = 0;
-        this->cmd_refresh_time.sec = 0;
+            // overwrite refresh time as a marker
+            ROS_INFO("Cmd lost, freeze the robot.");
+            this->cmd_refresh_time.nsec = 0;
+            this->cmd_refresh_time.sec = 0;
+        } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL && (!this->freeze_lost)) {
+            // keep sending current position as position control to perform motor damping.
+            for (int i(0); i < 12; i++)
+            {
+                this->low_cmd_buffer.motorCmd[i].q = this->low_state_buffer.motorState[i].q;
+                this->low_cmd_buffer.motorCmd[i].dq = 0.;
+                this->low_cmd_buffer.motorCmd[i].tau = 0.;
+                this->low_cmd_buffer.motorCmd[i].Kp = 20;
+                this->low_cmd_buffer.motorCmd[i].Kd = 1.;
+            }
+            ROS_INFO("Cmd lost, position control as motor damping.");
+        }
     }
 }
 

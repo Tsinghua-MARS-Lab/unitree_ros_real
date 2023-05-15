@@ -35,6 +35,9 @@ public:
     bool cmd_check; // if set, /*cmd_checker publisher will publish the from buffer at each udpSend()
     ros::Time cmd_refresh_time;
     float cmd_lost_timelimit; // (in sec) If system does not recieve LegsCmd or LowCmd within this timelimit, robot will be in safety position.
+    bool freeze_lost; // if true, the robot will freeze at current position. Otherwise, the motor will be in damping mode.
+    float pitch_protect_limit; // if greater than 0., the program exits when abs(pitch) of base is out of limit. The robot is probability to fall down.
+    float roll_protect_limit; // if greater than 0., the program exits when abs(roll) of base is out of limit. The robot is probability to fall down.
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_send;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
     

@@ -36,6 +36,7 @@ public:
     bool publish_joint_state = false;
     int joint_state_publish_freq = 50;
     int joint_state_publish_seq = 0;
+    bool publish_wirelessRemote = false;
     
     ros::Publisher imu_publisher;
     ros::Publisher wirelessRemote_publisher;

@@ -13,7 +13,11 @@
     <arg name="start_stand" default="false"/>
     <arg name="publish_joint_state" default="false"/>
     <arg name="joint_state_freq" default="100.0"/>
-    <arg name="cmd_lost_timelimit" default= "0.1"/>
+    <arg name="publish_wirelessRemote" default="false"/>
+    <arg name="cmd_lost_timelimit" default= "0.05"/>
+    <arg name="freeze_lost" default="true"/>
+    <arg name="pitch_protect_limit" default="0.8"/>
+    <arg name="roll_protect_limit" default="0.8"/>
     <!-- camera configurations, only when func:=full and camera_mode!=none -->
     <arg name="camera_mode" default="none"/>
     <arg name="image_fps" default="30"/>
@@ -32,7 +36,11 @@
             <param name="publish_imu" type="bool" value="$(arg publish_imu)"/>
             <param name="start_stand" type="bool" value="$(arg start_stand)"/>
             <param name="publish_joint_state" type="bool" value="$(arg publish_joint_state)"/>
+            <param name="publish_wirelessRemote" type="bool" value="$(arg publish_wirelessRemote)"/>
             <param name="cmd_lost_timelimit" type="double" value="$(arg cmd_lost_timelimit)"/>
+            <param name="freeze_lost" type="bool" value="$(arg freeze_lost)"/>
+            <param name="pitch_protect_limit" type="double" value="$(arg pitch_protect_limit)"/>
+            <param name="roll_protect_limit" type="double" value="$(arg roll_protect_limit)"/>
         </node>
 
         <group if="$(eval arg('publish_joint_state'))">
@@ -61,6 +69,9 @@
             <param name="position_protect_limit" type="double" value="$(arg position_protect_limit)"/>
             <param name="power_protect_level" type="int" value="$(arg power_protect_level)"/>
             <param name="start_stand" type="bool" value="$(arg start_stand)"/>
+            <param name="freeze_lost" type="bool" value="$(arg freeze_lost)"/>
+            <param name="pitch_protect_limit" type="double" value="$(arg pitch_protect_limit)"/>
+            <param name="roll_protect_limit" type="double" value="$(arg roll_protect_limit)"/>
         </node>
     </group>
 </launch>

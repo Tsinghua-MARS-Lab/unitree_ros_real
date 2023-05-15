@@ -35,6 +35,7 @@ void UnitreeRos::get_params()
     
     this->ros_handle.param<bool>("publish_imu", this->publish_imu, false);
     this->ros_handle.param<bool>("publish_joint_state", this->publish_joint_state, false);
+    this->ros_handle.param<bool>("publish_wirelessRemote", this->publish_wirelessRemote, false);
 }
 
 bool UnitreeRos::set_gaitType_srv_callback(
@@ -296,9 +297,10 @@ void UnitreeRos::publisher_init()
         this->imu_publisher = this->ros_handle.advertise<sensor_msgs::Imu>(
             "imu", 1
         );
-    this->wirelessRemote_publisher = this->ros_handle.advertise<unitree_legged_msgs::WirelessRemote>(
-        "wireless_remote", 1
-    );
+    if (this->publish_wirelessRemote)
+        this->wirelessRemote_publisher = this->ros_handle.advertise<unitree_legged_msgs::WirelessRemote>(
+            "wireless_remote", 1
+        );
 }
 
 void UnitreeRos::server_init()
@@ -368,11 +370,12 @@ void UnitreeRos::timer_init()
             &UnitreeRos::imu_publish_callback,
             this
         );
-    this->wirelessRemote_publish_timer = this->ros_handle.createTimer(
-        ros::Duration(1. / this->timer_freq),
-        &UnitreeRos::wirelessRemote_publish_callback,
-        this
-    );
+    if (this->publish_wirelessRemote)
+        this->wirelessRemote_publish_timer = this->ros_handle.createTimer(
+            ros::Duration(1. / this->timer_freq),
+            &UnitreeRos::wirelessRemote_publish_callback,
+            this
+        );
 }
 
 int main(int argc, char **argv)
