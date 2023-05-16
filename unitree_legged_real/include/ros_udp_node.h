@@ -36,8 +36,11 @@ public:
     ros::Time cmd_refresh_time;
     float cmd_lost_timelimit; // (in sec) If system does not recieve LegsCmd or LowCmd within this timelimit, robot will be in safety position.
     bool freeze_lost; // if true, the robot will freeze at current position. Otherwise, the motor will be in damping mode.
+    float safety_guard_duration; // The frequency of safety_guard_callback function. (in sec)
+    float torque_protect_limit; // if the estimated low_state torque exceed this limit, the program exits. The robot is probability to fall down.
     float pitch_protect_limit; // if greater than 0., the program exits when abs(pitch) of base is out of limit. The robot is probability to fall down.
     float roll_protect_limit; // if greater than 0., the program exits when abs(roll) of base is out of limit. The robot is probability to fall down.
+    bool robot_safe = true; // if false, this program is shutting down. No code should be able to set this value to true.
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_send;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
     
@@ -60,6 +63,7 @@ public:
     ros::Publisher cmd_checker;
     ros::Publisher state_publisher;
     ros::Timer cmd_lost_check_timer;
+    ros::Timer safety_guard_timer;
 
 protected:
     void get_params();
@@ -79,6 +83,7 @@ protected:
     void low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg);
     // Some helper functions
     void cmd_lost_check_callback(const ros::TimerEvent& event);
+    void safety_guard_callback(const ros::TimerEvent& event);
     void high_state_publish();
     void low_state_publish();
     void publisher_init();

@@ -20,6 +20,8 @@ void RosUdpHandler::get_params()
     this->ros_handle.param<bool>("start_stand", this->start_stand, true);
     this->ros_handle.param<float>("cmd_lost_timelimit", this->cmd_lost_timelimit, 0.05);
     this->ros_handle.param<bool>("freeze_lost", this->freeze_lost, false);
+    this->ros_handle.param<float>("safety_guard_duration", this->safety_guard_duration, 0.02);
+    this->ros_handle.param<float>("torque_protect_limit", this->torque_protect_limit, 33.5);
     this->ros_handle.param<float>("pitch_protect_limit", this->pitch_protect_limit, -1.);
     this->ros_handle.param<float>("roll_protect_limit", this->roll_protect_limit, -1.);
 
@@ -59,7 +61,6 @@ void RosUdpHandler::udp_start()
 
 void RosUdpHandler::udp_send()
 {
-    bool robot_safe (true);
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->udp.SetSend(this->high_cmd_buffer);
@@ -78,30 +79,21 @@ void RosUdpHandler::udp_send()
             this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
             this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->power_protect_level);
         }
-        // Protections implemented by this program
-        if (this->pitch_protect_limit > 0. && (abs(this->low_state_buffer.imu.rpy[1]) > this->pitch_protect_limit))
-        {
-            ROS_FATAL("Robot unsafe, pitch out of limit to: %f rads.", (this->low_state_buffer.imu.rpy[1]));
-            for (int i (0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
-            robot_safe = false;
-        }
-        if (this->roll_protect_limit > 0. && (abs(this->low_state_buffer.imu.rpy[0]) > this->roll_protect_limit))
-        {
-            ROS_FATAL("Robot unsafe, roll out of limit to: %f rads.", (this->low_state_buffer.imu.rpy[0]));
-            for (int i (0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
-            robot_safe = false;
-        }
         // Publish cmd_check if needed
         if (this->cmd_check)
         {
             unitree_legged_msgs::LowCmd ros_msg = Cmd2rosMsg(&this->low_cmd_buffer);
             this->cmd_checker.publish(ros_msg);
         }
+        if (!this->robot_safe)
+        {
+            for (int i (0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
+        }
         this->udp.SetSend(this->low_cmd_buffer);
     }
     if (!this->dryrun)
         this->udp.Send();
-    if (!robot_safe)
+    if (!this->robot_safe)
     {
         ROS_FATAL("Robot unsafe, exit the program.");
         ros::shutdown();
@@ -253,9 +245,43 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
                 this->low_cmd_buffer.motorCmd[i].dq = 0.;
                 this->low_cmd_buffer.motorCmd[i].tau = 0.;
                 this->low_cmd_buffer.motorCmd[i].Kp = 20;
-                this->low_cmd_buffer.motorCmd[i].Kd = 1.;
+                this->low_cmd_buffer.motorCmd[i].Kd = 0.5;
             }
-            ROS_INFO("Cmd lost, position control as motor damping.");
+            ROS_INFO_THROTTLE(1., "Cmd lost, position control as motor damping.");
+        }
+    }
+}
+
+void RosUdpHandler::safety_guard_callback(const ros::TimerEvent& event)
+{
+    /* Shutdown the process if the robot is not safe to prevent the motor from burning, even
+    it is not the best way to protect the robot.
+    */
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    {
+        if (this->pitch_protect_limit > 0. && (abs(this->low_state_buffer.imu.rpy[1]) > this->pitch_protect_limit))
+        {
+            this->robot_safe = false;
+            ROS_ERROR("Pitch out of limit, robot unsafe.");
+            return;
+        }
+        if (this->roll_protect_limit > 0. && (abs(this->low_state_buffer.imu.rpy[0]) > this->roll_protect_limit))
+        {
+            this->robot_safe = false;
+            ROS_ERROR("Roll out of limit, robot unsafe.");
+            return;
+        }
+        if (this->torque_protect_limit > 0.)
+        {
+            for (int i(0); i < 12; i++)
+            {
+                if (abs(this->low_state_buffer.motorState[i].tauEst) > this->torque_protect_limit)
+                {
+                    this->robot_safe = false;
+                    ROS_ERROR("Torque out of limit to %f, robot unsafe.", this->low_state_buffer.motorState[i].tauEst);
+                    return;
+                }
+            }
         }
     }
 }
@@ -321,6 +347,11 @@ void RosUdpHandler::timer_init()
         this->cmd_lost_check_timer = this->ros_handle.createTimer(
             ros::Duration(this->cmd_lost_timelimit),
             &RosUdpHandler::cmd_lost_check_callback,
+            this
+        );
+        this->safety_guard_timer = this->ros_handle.createTimer(
+            ros::Duration(this->safety_guard_duration),
+            &RosUdpHandler::safety_guard_callback,
             this
         );
     }

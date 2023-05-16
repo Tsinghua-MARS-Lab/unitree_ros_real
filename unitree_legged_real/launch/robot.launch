@@ -16,8 +16,9 @@
     <arg name="publish_wirelessRemote" default="false"/>
     <arg name="cmd_lost_timelimit" default= "0.05"/>
     <arg name="freeze_lost" default="false"/>
-    <arg name="pitch_protect_limit" default="0.8"/>
-    <arg name="roll_protect_limit" default="0.8"/>
+    <arg name="torque_protect_limit" default="33.5"/>
+    <arg name="pitch_protect_limit" default="0.9"/>
+    <arg name="roll_protect_limit" default="0.5"/>
     <!-- camera configurations, only when func:=full and camera_mode!=none -->
     <arg name="camera_mode" default="none"/>
     <arg name="image_fps" default="30"/>
@@ -39,6 +40,7 @@
             <param name="publish_wirelessRemote" type="bool" value="$(arg publish_wirelessRemote)"/>
             <param name="cmd_lost_timelimit" type="double" value="$(arg cmd_lost_timelimit)"/>
             <param name="freeze_lost" type="bool" value="$(arg freeze_lost)"/>
+            <param name="torque_protect_limit" type="double" value="$(arg torque_protect_limit)"/>
             <param name="pitch_protect_limit" type="double" value="$(arg pitch_protect_limit)"/>
             <param name="roll_protect_limit" type="double" value="$(arg roll_protect_limit)"/>
         </node>
@@ -70,6 +72,7 @@
             <param name="power_protect_level" type="int" value="$(arg power_protect_level)"/>
             <param name="start_stand" type="bool" value="$(arg start_stand)"/>
             <param name="freeze_lost" type="bool" value="$(arg freeze_lost)"/>
+            <param name="torque_protect_limit" type="double" value="$(arg torque_protect_limit)"/>
             <param name="pitch_protect_limit" type="double" value="$(arg pitch_protect_limit)"/>
             <param name="roll_protect_limit" type="double" value="$(arg roll_protect_limit)"/>
         </node>
