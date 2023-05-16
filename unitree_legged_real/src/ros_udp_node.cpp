@@ -19,7 +19,7 @@ void RosUdpHandler::get_params()
     this->ros_handle.param<bool>("dryrun", this->dryrun, true);
     this->ros_handle.param<bool>("start_stand", this->start_stand, true);
     this->ros_handle.param<float>("cmd_lost_timelimit", this->cmd_lost_timelimit, 0.05);
-    this->ros_handle.param<bool>("freeze_lost", this->freeze_lost, true);
+    this->ros_handle.param<bool>("freeze_lost", this->freeze_lost, false);
     this->ros_handle.param<float>("pitch_protect_limit", this->pitch_protect_limit, -1.);
     this->ros_handle.param<float>("roll_protect_limit", this->roll_protect_limit, -1.);
 
