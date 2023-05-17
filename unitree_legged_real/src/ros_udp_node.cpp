@@ -172,9 +172,9 @@ void RosUdpHandler::set_default_low_cmd()
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_1].tau = -this->low_cmd_default_tau;
     this->low_cmd_buffer.motorCmd[UNITREE_LEGGED_SDK::RL_2].tau = -this->low_cmd_default_tau;
     // set Kp
-    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kp = 30.0;
+    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kp = 20.0;
     // set Kd
-    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kd = 1.2;
+    for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kd = 0.5;
 }
 
 void RosUdpHandler::high_cmd_metadata_update()
@@ -232,9 +232,11 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
                 this->low_cmd_buffer.motorCmd[i].q = this->low_state_buffer.motorState[i].q;
                 this->low_cmd_buffer.motorCmd[i].dq = 0.;
                 this->low_cmd_buffer.motorCmd[i].tau = 0.;
+                this->low_cmd_buffer.motorCmd[i].Kp = this->safe_Kp;
+                this->low_cmd_buffer.motorCmd[i].Kd = this->safe_Kd;
             }
             // overwrite refresh time as a marker
-            ROS_INFO("Cmd lost, freeze the robot.");
+            ROS_WARN("Cmd lost, freeze the robot. DO NOT use this as a normal operation.");
             this->cmd_refresh_time.nsec = 0;
             this->cmd_refresh_time.sec = 0;
         } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL && (!this->freeze_lost)) {
@@ -244,10 +246,10 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
                 this->low_cmd_buffer.motorCmd[i].q = this->low_state_buffer.motorState[i].q;
                 this->low_cmd_buffer.motorCmd[i].dq = 0.;
                 this->low_cmd_buffer.motorCmd[i].tau = 0.;
-                this->low_cmd_buffer.motorCmd[i].Kp = 20;
-                this->low_cmd_buffer.motorCmd[i].Kd = 0.5;
+                this->low_cmd_buffer.motorCmd[i].Kp = this->safe_Kp;
+                this->low_cmd_buffer.motorCmd[i].Kd = this->safe_Kd;
             }
-            ROS_INFO_THROTTLE(1., "Cmd lost, position control as motor damping.");
+            ROS_WARN_THROTTLE(1., "Cmd lost, position control as motor damping. DO NOT use this as a normal operation.");
         }
     }
 }

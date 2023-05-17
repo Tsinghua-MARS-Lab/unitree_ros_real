@@ -47,6 +47,8 @@ public:
     UNITREE_LEGGED_SDK::Safety safe;
     float position_protect_limit; // Please check safety.h, 0.0 is the least limit
     int power_protect_level; // Refer to unitree_legged_sdk/safety.h
+    float safe_Kp = 10.;
+    float safe_Kd = 0.5;
     float low_cmd_default_tau = 0.65f;
     bool start_stand; // if true, the motor will be initialized to mode 10, otherwise mode 0.
 
