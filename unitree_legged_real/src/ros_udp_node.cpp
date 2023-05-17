@@ -85,11 +85,13 @@ void RosUdpHandler::udp_send()
             unitree_legged_msgs::LowCmd ros_msg = Cmd2rosMsg(&this->low_cmd_buffer);
             this->cmd_checker.publish(ros_msg);
         }
+        pthread_mutex_lock(&this->low_cmd_mutex);
         if (!this->robot_safe)
         {
             for (int i (0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
         }
         this->udp.SetSend(this->low_cmd_buffer);
+        pthread_mutex_unlock(&this->low_cmd_mutex);
     }
     if (!this->dryrun)
         this->udp.Send();
@@ -116,7 +118,9 @@ void RosUdpHandler::udp_recv()
     }
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
+        pthread_mutex_lock(&this->low_state_mutex);
         this->udp.GetRecv(this->low_state_buffer);
+        pthread_mutex_unlock(&this->low_state_mutex);
         this->low_state_publish();
         if (!this->low_cmd_metadata_get) this->low_cmd_metadata_update();
     }
@@ -212,7 +216,9 @@ void RosUdpHandler::high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstP
 
 void RosUdpHandler::low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg)
 {
+    pthread_mutex_lock(&this->low_cmd_mutex);
     this->low_cmd_buffer = rosMsg2Cmd(msg);
+    pthread_mutex_unlock(&this->low_cmd_mutex);
     this->cmd_refresh_time = ros::Time::now();
 }
 
@@ -227,6 +233,7 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
         if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL && this->freeze_lost)
         {
             // Send command to freeze the robot
+            pthread_mutex_lock(&this->low_cmd_mutex);
             for (int i(0); i < 12; i++)
             {
                 this->low_cmd_buffer.motorCmd[i].q = this->low_state_buffer.motorState[i].q;
@@ -235,12 +242,14 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
                 this->low_cmd_buffer.motorCmd[i].Kp = this->safe_Kp;
                 this->low_cmd_buffer.motorCmd[i].Kd = this->safe_Kd;
             }
+            pthread_mutex_unlock(&this->low_cmd_mutex);
             // overwrite refresh time as a marker
             ROS_WARN("Cmd lost, freeze the robot. DO NOT use this as a normal operation.");
             this->cmd_refresh_time.nsec = 0;
             this->cmd_refresh_time.sec = 0;
         } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL && (!this->freeze_lost)) {
             // keep sending current position as position control to perform motor damping.
+            pthread_mutex_lock(&this->low_cmd_mutex);
             for (int i(0); i < 12; i++)
             {
                 this->low_cmd_buffer.motorCmd[i].q = this->low_state_buffer.motorState[i].q;
@@ -249,6 +258,7 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
                 this->low_cmd_buffer.motorCmd[i].Kp = this->safe_Kp;
                 this->low_cmd_buffer.motorCmd[i].Kd = this->safe_Kd;
             }
+            pthread_mutex_unlock(&this->low_cmd_mutex);
             ROS_WARN_THROTTLE(1., "Cmd lost, position control as motor damping. DO NOT use this as a normal operation.");
         }
     }
@@ -296,7 +306,9 @@ void RosUdpHandler::high_state_publish()
 
 void RosUdpHandler::low_state_publish()
 {
+    pthread_mutex_lock(&this->low_state_mutex);
     unitree_legged_msgs::LowState ros_msg = state2rosMsg(this->low_state_buffer);
+    pthread_mutex_unlock(&this->low_state_mutex);
     this->state_publisher.publish(ros_msg);
 }
 

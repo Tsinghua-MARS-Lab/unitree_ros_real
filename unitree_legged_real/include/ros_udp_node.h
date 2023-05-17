@@ -56,7 +56,9 @@ public:
     UNITREE_LEGGED_SDK::HighState high_state_buffer = {0};
     bool high_cmd_metadata_get = false;
 
+    pthread_mutex_t low_cmd_mutex = PTHREAD_MUTEX_INITIALIZER;
     UNITREE_LEGGED_SDK::LowCmd low_cmd_buffer = {0};
+    pthread_mutex_t low_state_mutex = PTHREAD_MUTEX_INITIALIZER;
     UNITREE_LEGGED_SDK::LowState low_state_buffer = {0};
     bool low_cmd_metadata_get = false;
 

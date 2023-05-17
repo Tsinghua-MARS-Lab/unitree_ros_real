@@ -120,6 +120,7 @@ void UnitreeRos::body_height_callback(const std_msgs::Float32::ConstPtr &msg)
 void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr &msg)
 {
     this->cmd_refresh_time = ros::Time::now();
+    pthread_mutex_lock(&this->low_cmd_mutex);
     for (int i = 0; i < 12; i++)
     {
         this->low_cmd_buffer.motorCmd[i].mode = msg->cmd[i].mode;
@@ -131,6 +132,7 @@ void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr
         for (int j = 0; j < 3; j++)
             this->low_cmd_buffer.motorCmd[i].reserve[j] = msg->cmd[i].reserve[j];
     }
+    pthread_mutex_unlock(&this->low_cmd_mutex);
 }
 
 void UnitreeRos::imu_publish_callback(const ros::TimerEvent& event){
