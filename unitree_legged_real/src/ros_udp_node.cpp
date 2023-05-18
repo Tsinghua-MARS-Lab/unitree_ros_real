@@ -18,12 +18,13 @@ void RosUdpHandler::get_params()
     this->ros_handle.param<int>("power_protect_level", this->power_protect_level, 1);
     this->ros_handle.param<bool>("dryrun", this->dryrun, true);
     this->ros_handle.param<bool>("start_stand", this->start_stand, true);
-    this->ros_handle.param<float>("cmd_lost_timelimit", this->cmd_lost_timelimit, 0.05);
+    this->ros_handle.param<float>("cmd_lost_timelimit", this->cmd_lost_timelimit, 0.02);
     this->ros_handle.param<bool>("freeze_lost", this->freeze_lost, false);
     this->ros_handle.param<float>("safety_guard_duration", this->safety_guard_duration, 0.02);
     this->ros_handle.param<float>("torque_protect_limit", this->torque_protect_limit, 33.5);
     this->ros_handle.param<float>("pitch_protect_limit", this->pitch_protect_limit, -1.);
     this->ros_handle.param<float>("roll_protect_limit", this->roll_protect_limit, -1.);
+    this->ros_handle.param<float>("R2_press_protect", this->R2_press_protect, true);
 
     if (this->start_stand) ROS_INFO("Motor will be initialized to mode 10, please put the leg in stand positions.");
     else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
@@ -293,6 +294,17 @@ void RosUdpHandler::safety_guard_callback(const ros::TimerEvent& event)
                     ROS_ERROR("Torque out of limit to %f, robot unsafe.", this->low_state_buffer.motorState[i].tauEst);
                     return;
                 }
+            }
+        }
+        if (this->R2_press_protect)
+        {
+            xRockerBtnDataStruct remote_data;
+            memcpy(&remote_data, this->low_state_buffer.wirelessRemote, 40);
+            if ((int)remote_data.btn.components.R2 == 1)
+            {
+                this->robot_safe = false;
+                ROS_ERROR("R2 button pressed, robot unsafe.");
+                return;
             }
         }
     }

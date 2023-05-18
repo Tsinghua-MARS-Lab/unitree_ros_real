@@ -22,6 +22,7 @@
 #include <boost/function.hpp>
 
 #include "unitree_legged_sdk/unitree_legged_sdk.h"
+#include "unitree_legged_sdk/unitree_joystick.h"
 #include "convert.h"
 
 class RosUdpHandler
@@ -40,6 +41,7 @@ public:
     float torque_protect_limit; // if the estimated low_state torque exceed this limit, the program exits. The robot is probability to fall down.
     float pitch_protect_limit; // if greater than 0., the program exits when abs(pitch) of base is out of limit. The robot is probability to fall down.
     float roll_protect_limit; // if greater than 0., the program exits when abs(roll) of base is out of limit. The robot is probability to fall down.
+    float R2_press_protect; // if true, the program exits when detecting the L2 button on the wirelessRemote is pressed.
     bool robot_safe = true; // if false, this program is shutting down. No code should be able to set this value to true.
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_send;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
@@ -47,7 +49,7 @@ public:
     UNITREE_LEGGED_SDK::Safety safe;
     float position_protect_limit; // Please check safety.h, 0.0 is the least limit
     int power_protect_level; // Refer to unitree_legged_sdk/safety.h
-    float safe_Kp = 10.;
+    float safe_Kp = 15.;
     float safe_Kd = 0.5;
     float low_cmd_default_tau = 0.65f;
     bool start_stand; // if true, the motor will be initialized to mode 10, otherwise mode 0.
