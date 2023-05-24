@@ -77,7 +77,8 @@ void RosUdpHandler::udp_send()
         this->safe.PositionLimit(this->low_cmd_buffer);
         if (this->low_cmd_metadata_get)
         {   // means the los_state_buffer is valid, the following protection should be running.
-            this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
+            if (this->position_protect_limit > 0.)
+                this->safe.PositionProtect(this->low_cmd_buffer, this->low_state_buffer, this->position_protect_limit);
             this->safe.PowerProtect(this->low_cmd_buffer, this->low_state_buffer, this->power_protect_level);
         }
         // Publish cmd_check if needed
@@ -275,13 +276,13 @@ void RosUdpHandler::safety_guard_callback(const ros::TimerEvent& event)
         if (this->pitch_protect_limit > 0. && (abs(this->low_state_buffer.imu.rpy[1]) > this->pitch_protect_limit))
         {
             this->robot_safe = false;
-            ROS_ERROR("Pitch out of limit, robot unsafe.");
+            ROS_ERROR("Pitch out of limit to %f, robot unsafe.", this->low_state_buffer.imu.rpy[1]);
             return;
         }
         if (this->roll_protect_limit > 0. && (abs(this->low_state_buffer.imu.rpy[0]) > this->roll_protect_limit))
         {
             this->robot_safe = false;
-            ROS_ERROR("Roll out of limit, robot unsafe.");
+            ROS_ERROR("Roll out of limit to %f, robot unsafe.", this->low_state_buffer.imu.rpy[0]);
             return;
         }
         if (this->torque_protect_limit > 0.)
@@ -291,7 +292,7 @@ void RosUdpHandler::safety_guard_callback(const ros::TimerEvent& event)
                 if (abs(this->low_state_buffer.motorState[i].tauEst) > this->torque_protect_limit)
                 {
                     this->robot_safe = false;
-                    ROS_ERROR("Torque out of limit to %f, robot unsafe.", this->low_state_buffer.motorState[i].tauEst);
+                    ROS_ERROR("Torque out of limit to %f at joint %d, robot unsafe.", this->low_state_buffer.motorState[i].tauEst, i);
                     return;
                 }
             }
