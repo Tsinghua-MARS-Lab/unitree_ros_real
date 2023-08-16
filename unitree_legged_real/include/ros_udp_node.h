@@ -103,6 +103,7 @@ public:
             uint8_t level,                                  // (UNTIREE_LEGGED_SDK::HIGHLEVEL, LOWLEVEL), do use the enum.
             ros::NodeHandle nh
         );
+    ~RosUdpHandler();
 };
 
 #endif

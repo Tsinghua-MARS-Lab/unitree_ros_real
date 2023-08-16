@@ -280,6 +280,14 @@ UnitreeRos::UnitreeRos(
     this->timer_init();
 }
 
+UnitreeRos::~UnitreeRos()
+{
+    for (int i (0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
+    this->udp.SetSend(this->low_cmd_buffer);
+    this->udp.Send();
+    std::cout << "UnitreeRos desctructed" << std::endl;
+}
+
 /* The publisher in the base class is called by its constructor. This publisher_init is not related
 to the implementation of the base class
 */

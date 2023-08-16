@@ -428,6 +428,14 @@ RosUdpHandler::RosUdpHandler(
     ROS_INFO("RosUdpHandler constructed and started");
 }
 
+RosUdpHandler::~RosUdpHandler()
+{
+    for (int i (0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].mode = 0;
+    this->udp.SetSend(this->low_cmd_buffer);
+    this->udp.Send();
+    std::cout << "RosUdpHandler destructed" << std::endl;
+}
+
 int main(int argc, char **argv)
 {
     std::string robot_namespace (argv[1]);
