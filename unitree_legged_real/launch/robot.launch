@@ -5,8 +5,8 @@
     <arg name="udp_duration" default="0.01"/>
     <arg name="cmd_check" default="true"/>
     <arg name="ctrl_level" default="low"/>
-    <arg name="position_protect_limit" default="0.047"/>
-    <arg name="power_protect_level" default="4"/>
+    <arg name="position_protect_limit" default="0.001"/>
+    <arg name="power_protect_level" default="8"/>
     <arg name="output" default="screen"/>
     <arg name="func" default="full"/>
     <arg name="publish_imu" default="false"/>
@@ -16,9 +16,9 @@
     <arg name="publish_wirelessRemote" default="false"/>
     <arg name="cmd_lost_timelimit" default= "0.05"/>
     <arg name="freeze_lost" default="false"/>
-    <arg name="torque_protect_limit" default="35"/>
-    <arg name="pitch_protect_limit" default="0.9"/>
-    <arg name="roll_protect_limit" default="0.5"/>
+    <arg name="torque_protect_limit" default="38"/>
+    <arg name="pitch_protect_limit" default="1.3"/>
+    <arg name="roll_protect_limit" default="0.9"/>
     <arg name="R2_press_protect" default="true"/>
     <!-- camera configurations, only when func:=full and camera_mode!=none -->
     <arg name="camera_mode" default="none"/>

@@ -1,8 +1,8 @@
 <launch>
     <arg name="robot_namespace" default="a112138"/>
     <arg name="output" default="screen"/>
-    <arg name="visual_odom" default="true"/>
-    <arg name="legged_twist" default="true"/>
+    <arg name="visual_odom" default="false"/>
+    <arg name="legged_twist" default="false"/>
 
     <group if="$(eval arg('visual_odom'))">
         <node name="$(arg robot_namespace)_rtabmp_ros" pkg="rtabmap_ros" type="rgbd_odometry">
