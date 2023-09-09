@@ -30,6 +30,12 @@ void RosUdpHandler::get_params()
     else ROS_INFO("Motor will be initialized to mode 0, please put the robot on the ground or hang up.");
 }
 
+void RosUdpHandler::set_params()
+{
+    this->ros_handle.setParam("cmd/PosStopF", UNITREE_LEGGED_SDK::PosStopF);
+    this->ros_handle.setParam("cmd/VelStopF", UNITREE_LEGGED_SDK::VelStopF);
+}
+
 void RosUdpHandler::udp_init(uint8_t level)
 {
     if (level == UNITREE_LEGGED_SDK::HIGHLEVEL)
@@ -246,7 +252,7 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
             }
             pthread_mutex_unlock(&this->low_cmd_mutex);
             // overwrite refresh time as a marker
-            ROS_WARN("Cmd lost, freeze the robot. DO NOT use this as a normal operation.");
+            ROS_WARN_THROTTLE(30, "Cmd lost, freeze the robot. DO NOT use this as a normal operation.");
             this->cmd_refresh_time.nsec = 0;
             this->cmd_refresh_time.sec = 0;
         } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL && (!this->freeze_lost)) {
@@ -261,7 +267,7 @@ void RosUdpHandler::cmd_lost_check_callback(const ros::TimerEvent& event)
                 this->low_cmd_buffer.motorCmd[i].Kd = this->safe_Kd;
             }
             pthread_mutex_unlock(&this->low_cmd_mutex);
-            ROS_WARN_THROTTLE(1., "Cmd lost, position control as motor damping. DO NOT use this as a normal operation.");
+            ROS_WARN_THROTTLE(30., "Cmd lost, position control as motor damping. DO NOT use this as a normal operation.");
         }
     }
 }
@@ -419,8 +425,7 @@ RosUdpHandler::RosUdpHandler(
     this->udp_init(level);
     ROS_INFO("Udp initialized");
     // set ros parameters and timers
-    this->ros_handle.setParam(this->robot_namespace + "/PosStopF", UNITREE_LEGGED_SDK::PosStopF);
-    this->ros_handle.setParam(this->robot_namespace + "/VelStopF", UNITREE_LEGGED_SDK::VelStopF);
+    this->set_params();
     this->publisher_init();
     this->subscriber_init();
     this->timer_init();

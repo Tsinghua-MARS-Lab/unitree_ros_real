@@ -55,11 +55,11 @@ public:
 
     ros::Timer imu_publish_timer;
     ros::Timer wirelessRemote_publish_timer;
-    ros::Timer protect_limit_publish_timer;
     ros::Timer joint_state_publish_timer;
 
 protected:
     void get_params();
+    void set_params();
 
     // For simplicity, some states and commands must be processed and estimate
     bool set_gaitType_srv_callback(
@@ -83,7 +83,6 @@ protected:
     
     void imu_publish_callback(const ros::TimerEvent& event);
     void wirelessRemote_publish_callback(const ros::TimerEvent& event);
-    void protect_limit_publish_callback(const ros::TimerEvent& event);
     void joint_state_publish_callback(const ros::TimerEvent& event);
 
 public:

@@ -73,6 +73,7 @@ public:
 
 protected:
     void get_params();
+    void set_params();
     void udp_init(uint8_t level);
     void udp_start();
     // If dryrun, do everything except udp.send(). Publish the message to send everytime in udp_send().

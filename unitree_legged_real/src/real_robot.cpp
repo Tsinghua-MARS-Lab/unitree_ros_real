@@ -38,6 +38,16 @@ void UnitreeRos::get_params()
     this->ros_handle.param<bool>("publish_wirelessRemote", this->publish_wirelessRemote, false);
 }
 
+void UnitreeRos::set_params()
+{
+    this->ros_handle.setParam("joint_limits/hip_max", UNITREE_LEGGED_SDK::a1_Hip_max - this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/hip_min", UNITREE_LEGGED_SDK::a1_Hip_min + this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/thigh_max", UNITREE_LEGGED_SDK::a1_Thigh_max - this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/thigh_min", UNITREE_LEGGED_SDK::a1_Thigh_min + this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/calf_max", UNITREE_LEGGED_SDK::a1_Calf_max - this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/calf_min", UNITREE_LEGGED_SDK::a1_Calf_min + this->position_protect_limit);
+}
+
 bool UnitreeRos::set_gaitType_srv_callback(
     unitree_legged_srvs::SetGaitType::Request &req,
     unitree_legged_srvs::SetGaitType::Response &res
@@ -203,34 +213,6 @@ void UnitreeRos::wirelessRemote_publish_callback(const ros::TimerEvent& event)
     this->wirelessRemote_publisher.publish(ros_msg);
 }
 
-void UnitreeRos::protect_limit_publish_callback(const ros::TimerEvent& event)
-{
-    std_msgs::Float32MultiArray position_limit_msg;
-    position_limit_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
-    position_limit_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
-    position_limit_msg.layout.dim[0].size = 2; // (high, level)
-    position_limit_msg.layout.dim[0].stride = 2 * 12;
-    position_limit_msg.layout.dim[1].size = 12; // (hip0, thigh0, calf, hip1, thigh1, calf1, ...) 12 in total
-    position_limit_msg.layout.dim[1].stride = 12;
-    
-    // NOTE: the following code is only workable on A1 robot, not other model
-    for (int i (0); i < 12; i+=3)
-    {
-        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Hip_min + this->position_protect_limit);
-        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Thigh_min + this->position_protect_limit);
-        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Calf_min + this->position_protect_limit);
-    }
-    for (int i (0); i < 12; i+=3)
-    {
-        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Hip_max - this->position_protect_limit);
-        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Thigh_max - this->position_protect_limit);
-        position_limit_msg.data.push_back(UNITREE_LEGGED_SDK::a1_Calf_max - this->position_protect_limit);
-    }
-    
-    // publish the limit data. NOTE: the data unit is radian
-    this->position_limit_publisher.publish(position_limit_msg);
-}
-
 void UnitreeRos::joint_state_publish_callback(const ros::TimerEvent& event)
 {
     sensor_msgs::JointState ros_msg;
@@ -274,6 +256,7 @@ UnitreeRos::UnitreeRos(
     )
 {
     this->get_params();
+    this->set_params();
     this->publisher_init();
     this->server_init();
     this->subscriber_init();
@@ -362,11 +345,6 @@ void UnitreeRos::timer_init()
 {
     if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
-        this->protect_limit_publish_timer = this->ros_handle.createTimer(
-            ros::Duration(1. / this->timer_freq),
-            &UnitreeRos::protect_limit_publish_callback,
-            this
-        );
         if (this->publish_joint_state)
             this->joint_state_publish_timer = this->ros_handle.createTimer(
                 ros::Duration(1. / this->joint_state_publish_freq),
