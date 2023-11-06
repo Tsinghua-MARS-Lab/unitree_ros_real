@@ -8,6 +8,8 @@
  * @copyright Copyright (c) 2022
  * 
  */
+#ifndef _UNITERE_ROS_REAL_ROBOT_H_
+#define _UNITERE_ROS_REAL_ROBOT_H_
 
 #include "ros_udp_node.h"
 #include "geometry_msgs/Twist.h"
@@ -21,8 +23,8 @@
 #include <unitree_legged_srvs/SetGaitType.h>
 #include <unitree_legged_srvs/SetHighMode.h>
 #include <unitree_legged_srvs/SetSpeedLevel.h>
-#include "unitree_legged_sdk/unitree_joystick.h"
-#include "unitree_legged_sdk/a1_const.h"
+#include "unitree_legged_sdk/joystick.h"
+#include "unitree_legged_sdk/go1_const.h"
 
 class UnitreeRos: public RosUdpHandler
 {
@@ -43,14 +45,6 @@ public:
     ros::Publisher position_limit_publisher;
     ros::Publisher joint_state_publisher;
 
-    ros::ServiceServer set_gaitType_service;
-    ros::ServiceServer high_mode_service;
-    ros::ServiceServer high_speedLevel_service;
-
-    ros::Subscriber high_twist_subscriber;
-    ros::Subscriber foot_raise_height_subscriber;
-    ros::Subscriber body_height_subscriber;
-
     ros::Subscriber low_motor_subscriber;
 
     ros::Timer imu_publish_timer;
@@ -60,24 +54,6 @@ public:
 protected:
     void get_params();
     void set_params();
-
-    // For simplicity, some states and commands must be processed and estimate
-    bool set_gaitType_srv_callback(
-        unitree_legged_srvs::SetGaitType::Request &req,
-        unitree_legged_srvs::SetGaitType::Response &res
-    );
-    bool set_high_mode_srv_callback(
-        unitree_legged_srvs::SetHighMode::Request &req,
-        unitree_legged_srvs::SetHighMode::Response &res
-    );
-    bool set_high_speedLevel_srv_callback(
-        unitree_legged_srvs::SetSpeedLevel::Request &req,
-        unitree_legged_srvs::SetSpeedLevel::Response &res
-    );
-
-    void high_twist_callback(const geometry_msgs::Twist::ConstPtr &msg);
-    void foot_raise_height_callback(const std_msgs::Float32::ConstPtr &msg);
-    void body_height_callback(const std_msgs::Float32::ConstPtr &msg);
 
     void low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr &msg);
     
@@ -98,3 +74,5 @@ public:
     void subscriber_init();
     void timer_init();
 };
+
+#endif

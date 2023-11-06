@@ -1,0 +1,9 @@
+uint8 version_h
+uint8 version_l
+uint8 bms_status
+uint8 SOC
+int32 current
+uint16 cycle
+int8[2] BQ_NTC
+int8[2] MCU_NTC
+uint16[10] cell_vol

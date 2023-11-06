@@ -40,91 +40,12 @@ void UnitreeRos::get_params()
 
 void UnitreeRos::set_params()
 {
-    this->ros_handle.setParam("joint_limits/hip_max", UNITREE_LEGGED_SDK::a1_Hip_max - this->position_protect_limit);
-    this->ros_handle.setParam("joint_limits/hip_min", UNITREE_LEGGED_SDK::a1_Hip_min + this->position_protect_limit);
-    this->ros_handle.setParam("joint_limits/thigh_max", UNITREE_LEGGED_SDK::a1_Thigh_max - this->position_protect_limit);
-    this->ros_handle.setParam("joint_limits/thigh_min", UNITREE_LEGGED_SDK::a1_Thigh_min + this->position_protect_limit);
-    this->ros_handle.setParam("joint_limits/calf_max", UNITREE_LEGGED_SDK::a1_Calf_max - this->position_protect_limit);
-    this->ros_handle.setParam("joint_limits/calf_min", UNITREE_LEGGED_SDK::a1_Calf_min + this->position_protect_limit);
-}
-
-bool UnitreeRos::set_gaitType_srv_callback(
-    unitree_legged_srvs::SetGaitType::Request &req,
-    unitree_legged_srvs::SetGaitType::Response &res
-)
-{
-    if (this->ctrl_level != UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        ROS_ERROR("Your set_gaitType service is captured by a UnitreeRos low level handler.");
-        exit(-1);
-    }
-
-    this->high_cmd_buffer.gaitType = req.gait_type;
-    res.success = check_until_timeout(
-        this->state_check_freq,
-        this->state_check_times_max,
-        &this->high_state_buffer.gaitType,
-        &req.gait_type
-    );
-
-    return true;
-}
-
-bool UnitreeRos::set_high_mode_srv_callback(
-    unitree_legged_srvs::SetHighMode::Request &req,
-    unitree_legged_srvs::SetHighMode::Response &res
-)
-{
-    if (this->ctrl_level != UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        ROS_ERROR("Your set_high_mode service is captured by a UnitreeRos low level handler.");
-        exit(-1);
-    }
-
-    this->high_cmd_buffer.mode = req.mode;
-    res.success = check_until_timeout(
-        this->state_check_freq,
-        this->state_check_times_max,
-        &this->high_state_buffer.mode,
-        &req.mode
-    );
-
-    return true;
-}
-
-bool UnitreeRos::set_high_speedLevel_srv_callback(
-    unitree_legged_srvs::SetSpeedLevel::Request &req,
-    unitree_legged_srvs::SetSpeedLevel::Response &res
-)
-{
-    if (this->ctrl_level != UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        ROS_ERROR("Your set_high_mode service is captured by a UnitreeRos low level handler.");
-        exit(-1);
-    }
-
-    this->high_cmd_buffer.speedLevel = req.speed_level;
-    res.success = (this->high_cmd_buffer.mode == 3); // refering to unitree_legged_sdk/include/unitree_legged_sdk/comm.h
-
-    return true;
-}
-
-void UnitreeRos::high_twist_callback(const geometry_msgs::Twist::ConstPtr &msg)
-{
-    this->cmd_refresh_time = ros::Time::now();
-    this->high_cmd_buffer.velocity[0] = msg->linear.x;
-    this->high_cmd_buffer.velocity[1] = msg->linear.y;
-    this->high_cmd_buffer.yawSpeed = msg->angular.z;
-}
-
-void UnitreeRos::foot_raise_height_callback(const std_msgs::Float32::ConstPtr &msg)
-{
-    this->high_cmd_buffer.footRaiseHeight = msg->data;
-}
-
-void UnitreeRos::body_height_callback(const std_msgs::Float32::ConstPtr &msg)
-{
-    this->high_cmd_buffer.bodyHeight = msg->data;
+    this->ros_handle.setParam("joint_limits/hip_max", UNITREE_LEGGED_SDK::go1_Hip_max - this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/hip_min", UNITREE_LEGGED_SDK::go1_Hip_min + this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/thigh_max", UNITREE_LEGGED_SDK::go1_Thigh_max - this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/thigh_min", UNITREE_LEGGED_SDK::go1_Thigh_min + this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/calf_max", UNITREE_LEGGED_SDK::go1_Calf_max - this->position_protect_limit);
+    this->ros_handle.setParam("joint_limits/calf_min", UNITREE_LEGGED_SDK::go1_Calf_min + this->position_protect_limit);
 }
 
 void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr &msg)
@@ -148,27 +69,25 @@ void UnitreeRos::low_motor_callback(const unitree_legged_msgs::LegsCmd::ConstPtr
 void UnitreeRos::imu_publish_callback(const ros::TimerEvent& event){
     sensor_msgs::Imu ros_msg;
     UNITREE_LEGGED_SDK::IMU *imu_ptr;
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-        imu_ptr = &this->high_state_buffer.imu;
-    else
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
         imu_ptr = &this->low_state_buffer.imu;
     
     // fill ros message
     ros_msg.header.seq = this->imu_publish_seq++;
     ros_msg.header.stamp = ros::Time::now();
-    ros_msg.header.frame_id = this->robot_namespace + "/imu_link";
-    ros_msg.orientation.x = imu_ptr->quaternion[1];
-    ros_msg.orientation.y = imu_ptr->quaternion[2];
-    ros_msg.orientation.z = imu_ptr->quaternion[3];
-    ros_msg.orientation.w = imu_ptr->quaternion[0];
+    ros_msg.header.frame_id = "imu_link";
+    ros_msg.orientation.x = (double)imu_ptr->quaternion[1];
+    ros_msg.orientation.y = (double)imu_ptr->quaternion[2];
+    ros_msg.orientation.z = (double)imu_ptr->quaternion[3];
+    ros_msg.orientation.w = (double)imu_ptr->quaternion[0];
     // ros_msg.orientation_covariance unknown
-    ros_msg.angular_velocity.x = imu_ptr->gyroscope[0];
-    ros_msg.angular_velocity.y = imu_ptr->gyroscope[1];
-    ros_msg.angular_velocity.z = imu_ptr->gyroscope[2];
+    ros_msg.angular_velocity.x = (double)imu_ptr->gyroscope[0];
+    ros_msg.angular_velocity.y = (double)imu_ptr->gyroscope[1];
+    ros_msg.angular_velocity.z = (double)imu_ptr->gyroscope[2];
     // ros_msg.angular_velocity_covariance unknown
-    ros_msg.linear_acceleration.x = imu_ptr->accelerometer[0];
-    ros_msg.linear_acceleration.y = imu_ptr->accelerometer[1];
-    ros_msg.linear_acceleration.z = imu_ptr->accelerometer[2];
+    ros_msg.linear_acceleration.x = (double)imu_ptr->accelerometer[0];
+    ros_msg.linear_acceleration.y = (double)imu_ptr->accelerometer[1];
+    ros_msg.linear_acceleration.z = (double)imu_ptr->accelerometer[2];
     // ros_mag.linear_acceleration_covariance unknown
 
     this->imu_publisher.publish(ros_msg);
@@ -177,11 +96,7 @@ void UnitreeRos::imu_publish_callback(const ros::TimerEvent& event){
 void UnitreeRos::wirelessRemote_publish_callback(const ros::TimerEvent& event)
 {
     unitree_legged_msgs::WirelessRemote ros_msg;
-    xRockerBtnDataStruct _keyData;
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-        memcpy(&_keyData, this->high_state_buffer.wirelessRemote, 40);
-    else
-        memcpy(&_keyData, this->low_state_buffer.wirelessRemote, 40);
+    unitree_legged_msgs::WirelessRemote _keyData = Bytes2rosMsg(this->low_state_buffer.wirelessRemote);
     
     // transfer data from the struct to ros message
     for (int i (0); i < 2; i++) ros_msg.head[i] = _keyData.head[i];
@@ -218,20 +133,20 @@ void UnitreeRos::joint_state_publish_callback(const ros::TimerEvent& event)
     sensor_msgs::JointState ros_msg;
     ros_msg.header.seq = this->joint_state_publish_seq++;
     ros_msg.header.stamp = ros::Time::now();
-    ros_msg.header.frame_id = this->robot_namespace + "/base";
+    ros_msg.header.frame_id = "base";
     // 12 joint names
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/FR_hip_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/FR_thigh_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/FR_calf_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/FL_hip_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/FL_thigh_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/FL_calf_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/RR_hip_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/RR_thigh_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/RR_calf_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/RL_hip_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/RL_thigh_joint"));
-    ros_msg.name.push_back(std::string(this->robot_namespace + "/RL_calf_joint"));
+    ros_msg.name.push_back(std::string("FR_hip_joint"));
+    ros_msg.name.push_back(std::string("FR_thigh_joint"));
+    ros_msg.name.push_back(std::string("FR_calf_joint"));
+    ros_msg.name.push_back(std::string("FL_hip_joint"));
+    ros_msg.name.push_back(std::string("FL_thigh_joint"));
+    ros_msg.name.push_back(std::string("FL_calf_joint"));
+    ros_msg.name.push_back(std::string("RR_hip_joint"));
+    ros_msg.name.push_back(std::string("RR_thigh_joint"));
+    ros_msg.name.push_back(std::string("RR_calf_joint"));
+    ros_msg.name.push_back(std::string("RL_hip_joint"));
+    ros_msg.name.push_back(std::string("RL_thigh_joint"));
+    ros_msg.name.push_back(std::string("RL_calf_joint"));
     // 12 joint positions
     for (int i (0); i < 12; i++) ros_msg.position.push_back(this->low_state_buffer.motorState[i].q);
     // 12 joint velocites
@@ -298,39 +213,11 @@ void UnitreeRos::publisher_init()
 
 void UnitreeRos::server_init()
 {
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->set_gaitType_service = this->ros_handle.advertiseService(
-            "set_gaitType",
-            &UnitreeRos::set_gaitType_srv_callback,
-            this
-        );
-    }
 }
 
 void UnitreeRos::subscriber_init()
 {
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->high_twist_subscriber = this->ros_handle.subscribe(
-            "body_motion_cmd",
-            10,
-            &UnitreeRos::high_twist_callback,
-            this
-        );
-        this->foot_raise_height_subscriber = this->ros_handle.subscribe(
-            "foot_raise_heigh_cmd",
-            10,
-            &UnitreeRos::foot_raise_height_callback,
-            this
-        );
-        this->body_height_subscriber = this->ros_handle.subscribe(
-            "body_height_cmd",
-            10,
-            &UnitreeRos::body_height_callback,
-            this
-        );
-    } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->low_motor_subscriber = this->ros_handle.subscribe(
             "legs_cmd",
@@ -376,8 +263,8 @@ int main(int argc, char **argv)
     float udp_duration; nh.param<float>("udp_duration", udp_duration, 0.01);
     std::string ctrl_level_s; nh.getParam("ctrl_level", ctrl_level_s);
     bool use_low_level = (ctrl_level_s.compare("low") == 0);
-    uint8_t level = UNITREE_LEGGED_SDK::HIGHLEVEL;
-    if (use_low_level) level = UNITREE_LEGGED_SDK::LOWLEVEL;
+    if (!use_low_level) ROS_DEBUG("You set the ctrl_level to low, which is not supported by this package");
+    uint8_t level = UNITREE_LEGGED_SDK::LOWLEVEL;
 
     // construct and initialize this ros node
     UnitreeRos unitree_ros_node(

@@ -1,0 +1,22 @@
+<launch>
+
+    <arg name="robot_namespace" default="a112138"/>
+    <arg name="publish_frequency" default="1000.0"/>
+    <arg name="user_debug" default="false"/>
+    
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find go1_description)/xacro/robot.xacro'
+            DEBUG:=$(arg user_debug)"/>
+
+    <!-- for higher robot_state_publisher average rate-->
+    <!-- <param name="rate" value="1000.0"/> -->
+
+    <!-- send fake joint values -->
+    <!-- <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+        <param name="use_gui" value="TRUE"/>
+    </node> -->
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="$(arg publish_frequency)"/>
+    </node>
+
+</launch>

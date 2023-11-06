@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
+  BmsCmd.msg
+  BmsState.msg
   MotorCmd.msg
   MotorState.msg
   Cartesian.msg
@@ -18,8 +20,6 @@ add_message_files(
   LegsCmd.msg
   LowCmd.msg
   LowState.msg
-  HighCmd.msg
-  HighState.msg
   RemoteComponents.msg
   RemoteSwitch.msg
   WirelessRemote.msg

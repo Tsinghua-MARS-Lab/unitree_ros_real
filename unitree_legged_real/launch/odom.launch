@@ -34,7 +34,7 @@
         <rosparam command="load" file="$(find robot_localization)/params/ekf_template.yaml" />
         <param name="base_link_frame" value="$(arg robot_namespace)/base"/>
 
-        <param name="imu0" value="$(arg robot_namespace)/imu"/>
+        <param name="imu0" value="imu"/>
         <rosparam param="imu0_config">[false, false, false,
                                     true, true, true,
                                     false, false, false,

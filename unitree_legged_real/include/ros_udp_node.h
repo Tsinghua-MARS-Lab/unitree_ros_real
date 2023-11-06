@@ -14,15 +14,15 @@
 #include <iostream>
 #include <ros/ros.h>
 #include <ros/console.h>
-#include <unitree_legged_msgs/HighCmd.h>
-#include <unitree_legged_msgs/HighState.h>
+// #include <unitree_legged_msgs/HighCmd.h>
+// #include <unitree_legged_msgs/HighState.h>
 #include <unitree_legged_msgs/LowCmd.h>
 #include <unitree_legged_msgs/LowState.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
 #include "unitree_legged_sdk/unitree_legged_sdk.h"
-#include "unitree_legged_sdk/unitree_joystick.h"
+#include "unitree_legged_sdk/joystick.h"
 #include "convert.h"
 
 class RosUdpHandler
@@ -39,11 +39,12 @@ public:
     bool freeze_lost; // if true, the robot will freeze at current position. Otherwise, the motor will be in damping mode.
     float safety_guard_duration; // The frequency of safety_guard_callback function. (in sec)
     float torque_protect_limit; // if the estimated low_state torque exceed this limit, the program exits. The robot is probability to fall down.
+    float torque_protect_limit_calf; // Go1's calf has higher torque limit, which is set individually.
     float pitch_protect_limit; // if greater than 0., the program exits when abs(pitch) of base is out of limit. The robot is probability to fall down.
     float roll_protect_limit; // if greater than 0., the program exits when abs(roll) of base is out of limit. The robot is probability to fall down.
     float R2_press_protect; // if true, the program exits when detecting the L2 button on the wirelessRemote is pressed.
     bool robot_safe = true; // if false, this program is shutting down. No code should be able to set this value to true.
-    int udp_recv_result = -1;
+    int udp_recv_result = -2;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_send;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_translate;
@@ -56,9 +57,9 @@ public:
     float low_cmd_default_tau = 0.65f;
     bool start_stand; // if true, the motor will be initialized to mode 10, otherwise mode 0.
 
-    UNITREE_LEGGED_SDK::HighCmd high_cmd_buffer = {0};
-    UNITREE_LEGGED_SDK::HighState high_state_buffer = {0};
-    bool high_cmd_metadata_get = false;
+    // UNITREE_LEGGED_SDK::HighCmd high_cmd_buffer = {0};
+    // UNITREE_LEGGED_SDK::HighState high_state_buffer = {0};
+    // bool high_cmd_metadata_get = false;
 
     pthread_mutex_t low_cmd_mutex = PTHREAD_MUTEX_INITIALIZER;
     UNITREE_LEGGED_SDK::LowCmd low_cmd_buffer = {0};
@@ -78,24 +79,24 @@ protected:
     void set_params();
     void udp_init(uint8_t level);
     void udp_start();
-    // If dryrun, do everything except udp.send(). Publish the message to send everytime in udp_send().
+    // If dryrun, do everything except udp.send().
     void udp_send();
-    // Publish the message directly to ROS everytime in udp_recv().
     void udp_recv();
+    // Publish the low_state directly to ROS everytime in udp_translate().
+    // Also publish every latest low_cmd to ROS (for double check).
     void udp_translate();
-    
     // Initialize the buffer for the use of setting only part of the cmd.
     void set_default_high_cmd();
     void set_default_low_cmd();
-    void high_cmd_metadata_update();
+    // void high_cmd_metadata_update();
     void low_cmd_metadata_update();
     // Expose udp communication directly through ROS topics
-    void high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg);
+    // void high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg);
     void low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg);
     // Some helper functions
     void cmd_lost_check_callback(const ros::TimerEvent& event);
     void safety_guard_callback(const ros::TimerEvent& event);
-    void high_state_publish();
+    // void high_state_publish();
     void low_state_publish();
     void publisher_init();
     void subscriber_init();

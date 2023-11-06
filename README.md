@@ -16,14 +16,9 @@ The ROS package that runs on Unitree A1 NX and expose all functionality of Unitr
     catkin_make
     ```
 
-4. Download [unitree_legged_sdk v3.3.1](https://github.com/unitreerobotics/unitree_legged_sdk/releases/tag/v3.3.1) and extract it under `unitree_ws/src/`
+4. Download [unitree_legged_sdk v3.8.6](https://github.com/unitreerobotics/unitree_legged_sdk/releases/tag/v3.8.6) and extract it under `unitree_ws/src/`
 
-5. Clone this repository to `unitree_ws/src/` by
-
-    ``` bash
-    cd unitree_ws/src
-    git clone https://github.com/Tsinghua-MARS-Lab/unitree_ros_real.git
-    ```
+5. Clone this branch of the repository to `unitree_ws/src/`
 
 6. Run `catkin_make` under the workspace folder
 
@@ -96,11 +91,7 @@ The ROS package that runs on Unitree A1 NX and expose all functionality of Unitr
 - Mandatory safe protection just before upd.send()
 
 ### In HIGHLEVEL
-- service for change mode (use ROS constant in service file)
-- service for change gaitType (use ROS constant in service file)
-- subscribe Twist message for x, y, yaw moving
-- subscribe Twist message for position, euler angle positioning
-- subscribe Float32 message for set body height
+- Currently removed.
 
 ### In LOWEVEL
 - subscribe customized motor message for each joint
@@ -109,6 +100,3 @@ The ROS package that runs on Unitree A1 NX and expose all functionality of Unitr
 - publish Twist message filtered IMU rpy euler angle, linear speed (kalman filter, etc)
 - publish Transform message for each joint position of the robot
 - publish Transform message for Robot base odometry
-- publish aligned realsense RGB-D camera image and camera Transform (intrinsic parameters)
-
-    (Usually it is two topics: image_raw and camera_info for RGB and for Depth)

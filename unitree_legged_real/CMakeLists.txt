@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     sensor_msgs
     unitree_legged_msgs
+    unitree_legged_sdk
     tf
 )
 find_package (Eigen3 REQUIRED NO_MODULE)
@@ -20,7 +21,7 @@ if("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64.*")
 else()
   set(ARCH arm64)
 endif()
-set(LEGGED_SDK_NAME -pthread libunitree_legged_sdk_${ARCH}.so lcm)
+set(LEGGED_SDK_NAME -pthread libunitree_legged_sdk.a lcm)
 
 set(EXTRA_LIBS ${LEGGED_SDK_NAME})
 
@@ -28,21 +29,23 @@ set(EXTRA_LIBS ${LEGGED_SDK_NAME})
 set(CMAKE_CXX_FLAGS "-O3 -fPIC")
 
 
-
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/unitree_legged_sdk/include
+    ${Boost_INCLUDE_DIR}
+    ${UNITREE_LEGGED_SDK_INCLUDE_DIR}
+    ${catkin_INCLUDE_DIRS}/unitree_legged_sdk/include
 )
 
+link_directories(${CMAKE_SOURCE_DIR}/unitree_legged_sdk/lib/cpp/${ARCH})
 add_library(unitree_ros SHARED)
+target_link_libraries(unitree_ros ${EXTRA_LIBS} ${catkin_LIBRARIES})
 target_sources(
   unitree_ros PRIVATE
   src/ros_udp_node.cpp
 )
 
 
-link_directories(${CMAKE_SOURCE_DIR}/unitree_legged_sdk/lib)
 
 
 add_executable(ros_udp_node src/ros_udp_node.cpp)

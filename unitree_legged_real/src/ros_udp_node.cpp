@@ -22,6 +22,7 @@ void RosUdpHandler::get_params()
     this->ros_handle.param<bool>("freeze_lost", this->freeze_lost, false);
     this->ros_handle.param<float>("safety_guard_duration", this->safety_guard_duration, 0.02);
     this->ros_handle.param<float>("torque_protect_limit", this->torque_protect_limit, 33.5);
+    this->ros_handle.param<float>("torque_protect_limit_calf", this->torque_protect_limit_calf, this->torque_protect_limit);
     this->ros_handle.param<float>("pitch_protect_limit", this->pitch_protect_limit, -1.);
     this->ros_handle.param<float>("roll_protect_limit", this->roll_protect_limit, -1.);
     this->ros_handle.param<float>("R2_press_protect", this->R2_press_protect, true);
@@ -38,11 +39,7 @@ void RosUdpHandler::set_params()
 
 void RosUdpHandler::udp_init(uint8_t level)
 {
-    if (level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->udp.InitCmdData(this->high_cmd_buffer);
-    }
-    else if (level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    if (level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->udp.InitCmdData(this->low_cmd_buffer);
     }
@@ -50,12 +47,7 @@ void RosUdpHandler::udp_init(uint8_t level)
 
 void RosUdpHandler::udp_start()
 {
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->set_default_high_cmd();
-        this->udp.SetSend(this->high_cmd_buffer);
-        this->udp.Send();
-    } else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->set_default_low_cmd();
         this->udp.SetSend(this->low_cmd_buffer);
@@ -69,7 +61,7 @@ void RosUdpHandler::udp_start()
 
 void RosUdpHandler::udp_send()
 {
-    if (!this->dryrun)
+    if (!this->dryrun && this->robot_safe)
         this->udp.Send();
 }
 
@@ -85,12 +77,6 @@ void RosUdpHandler::udp_translate()
     {
         ROS_ERROR_DELAYED_THROTTLE(0.1, "udp_recv error: %i, message translate might lost once.", this->udp_recv_result);
     }
-    else if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->udp.GetRecv(this->high_state_buffer);
-        this->high_state_publish();
-        if (!this->high_cmd_metadata_get) this->high_cmd_metadata_update();
-    }
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         pthread_mutex_lock(&this->low_state_mutex);
@@ -99,18 +85,9 @@ void RosUdpHandler::udp_translate()
         this->low_state_publish();
         if (!this->low_cmd_metadata_get) this->low_cmd_metadata_update();
     }
-    
+
     // Send part
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->udp.SetSend(this->high_cmd_buffer);
-        if (this->cmd_check)
-        {
-            unitree_legged_msgs::HighCmd ros_msg = Cmd2rosMsg(&this->high_cmd_buffer);
-            this->cmd_checker.publish(ros_msg);
-        }
-    }
-    else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         // Set to udp buffer after protection
         this->safe.PositionLimit(this->low_cmd_buffer);
@@ -140,19 +117,6 @@ void RosUdpHandler::udp_translate()
             ros::shutdown();
         }
     }
-}
-
-void RosUdpHandler::set_default_high_cmd()
-{
-    this->high_cmd_buffer.mode = 0;
-    this->high_cmd_buffer.gaitType = 0;
-    this->high_cmd_buffer.speedLevel = 0;
-    this->high_cmd_buffer.footRaiseHeight = 0.08;
-    this->high_cmd_buffer.bodyHeight = 0.28;
-    for (int i(0); i < 2; i++) this->high_cmd_buffer.postion[i] = 0.;
-    for (int i(0); i < 3; i++) this->high_cmd_buffer.euler[i] = 0.;
-    for (int i(0); i < 2; i++) this->high_cmd_buffer.velocity[i] = 0.;
-    this->high_cmd_buffer.yawSpeed = 0;
 }
 
 // NOTE: this function is one of the reason that this node can only work on Unitree A1 robot.
@@ -197,37 +161,20 @@ void RosUdpHandler::set_default_low_cmd()
     for (int i(0); i < 12; i++) this->low_cmd_buffer.motorCmd[i].Kd = 0.5;
 }
 
-void RosUdpHandler::high_cmd_metadata_update()
-{
-    this->high_cmd_buffer.levelFlag = this->high_state_buffer.levelFlag;
-    this->high_cmd_buffer.commVersion = this->high_state_buffer.commVersion;
-    this->high_cmd_buffer.robotID = this->high_state_buffer.robotID;
-    this->high_cmd_buffer.SN = this->high_state_buffer.SN;
-    this->high_cmd_buffer.bandWidth = this->high_state_buffer.bandWidth;
-    this->high_cmd_buffer.mode = this->high_state_buffer.mode;
-    this->high_cmd_buffer.gaitType = this->high_state_buffer.gaitType;
-    this->high_cmd_buffer.speedLevel = 0;
-    this->high_cmd_buffer.footRaiseHeight = this->high_state_buffer.footRaiseHeight;
-    this->high_cmd_buffer.bodyHeight = this->high_state_buffer.bodyHeight;
-
-    this->high_cmd_metadata_get = true;
-}
-
 void RosUdpHandler::low_cmd_metadata_update()
 {
+    this->low_cmd_buffer.head[0] = this->low_state_buffer.head[0];
+    this->low_cmd_buffer.head[1] = this->low_state_buffer.head[1];
     this->low_cmd_buffer.levelFlag = this->low_state_buffer.levelFlag;
-    this->low_cmd_buffer.commVersion = this->low_state_buffer.commVersion;
-    this->low_cmd_buffer.robotID = this->low_state_buffer.robotID;
-    this->low_cmd_buffer.SN = this->low_state_buffer.SN;
+    this->low_cmd_buffer.frameReserve = this->low_state_buffer.frameReserve;
+
+    this->low_cmd_buffer.SN[0] = this->low_state_buffer.SN[0];
+    this->low_cmd_buffer.SN[1] = this->low_state_buffer.SN[1];
+    this->low_cmd_buffer.version[0] = this->low_state_buffer.version[0];
+    this->low_cmd_buffer.version[1] = this->low_state_buffer.version[1];
     this->low_cmd_buffer.bandWidth = this->low_state_buffer.bandWidth;
 
     this->low_cmd_metadata_get = true;
-}
-
-void RosUdpHandler::high_cmd_callback(const unitree_legged_msgs::HighCmd::ConstPtr &msg)
-{
-    this->high_cmd_buffer = rosMsg2Cmd(msg);
-    this->cmd_refresh_time = ros::Time::now();
 }
 
 void RosUdpHandler::low_cmd_callback(const unitree_legged_msgs::LowCmd::ConstPtr &msg)
@@ -301,20 +248,30 @@ void RosUdpHandler::safety_guard_callback(const ros::TimerEvent& event)
         }
         if (this->torque_protect_limit > 0.)
         {
-            for (int i(0); i < 12; i++)
+            for (int i(0); i < 4; i++)
             {
-                if (abs(this->low_state_buffer.motorState[i].tauEst) > this->torque_protect_limit)
+                for (int j(0); j < 2; j++)
+                    if (abs(this->low_state_buffer.motorState[i*3 + j].tauEst) > this->torque_protect_limit)
+                    {
+                        this->robot_safe = false;
+                        ROS_ERROR("Torque out of limit to %f at joint %d, robot unsafe.", this->low_state_buffer.motorState[i*3 + j].tauEst, i);
+                        return;
+                    }
+                if (abs(this->low_state_buffer.motorState[i*3 + 2].tauEst) > this->torque_protect_limit_calf)
                 {
                     this->robot_safe = false;
-                    ROS_ERROR("Torque out of limit to %f at joint %d, robot unsafe.", this->low_state_buffer.motorState[i].tauEst, i);
+                    ROS_ERROR("Torque out of limit to %f at joint %d, robot unsafe.", this->low_state_buffer.motorState[i*3 + 2].tauEst, i);
                     return;
                 }
             }
         }
+        if (this->low_state_buffer.bms.SOC < 20.)
+        {
+            ROS_WARN_THROTTLE(10, "Battery lower than 20%, please charge the battery as soon as possible!");
+        }
         if (this->R2_press_protect)
         {
-            xRockerBtnDataStruct remote_data;
-            memcpy(&remote_data, this->low_state_buffer.wirelessRemote, 40);
+            unitree_legged_msgs::WirelessRemote remote_data = Bytes2rosMsg(this->low_state_buffer.wirelessRemote);
             if ((int)remote_data.btn.components.R2 == 1)
             {
                 this->robot_safe = false;
@@ -323,12 +280,6 @@ void RosUdpHandler::safety_guard_callback(const ros::TimerEvent& event)
             }
         }
     }
-}
-
-void RosUdpHandler::high_state_publish()
-{
-    unitree_legged_msgs::HighState ros_msg = state2rosMsg(this->high_state_buffer);
-    this->state_publisher.publish(ros_msg);
 }
 
 void RosUdpHandler::low_state_publish()
@@ -341,17 +292,7 @@ void RosUdpHandler::low_state_publish()
 
 void RosUdpHandler::publisher_init()
 {
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::HighState>(
-            "high_state", 1
-        );
-        if (this->cmd_check)
-            this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::HighCmd>(
-                "high_cmd_check", 1
-            );
-    }
-    else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::LowState>(
             "low_state", 10
@@ -365,14 +306,7 @@ void RosUdpHandler::publisher_init()
 
 void RosUdpHandler::subscriber_init()
 {
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-        this->cmd_subscriber = this->ros_handle.subscribe(
-            "high_cmd",
-            10,
-            &RosUdpHandler::high_cmd_callback,
-            this
-        );
-    else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
         this->cmd_subscriber = this->ros_handle.subscribe(
             "low_cmd",
             10,
@@ -404,9 +338,9 @@ RosUdpHandler::RosUdpHandler(
     uint8_t level,
     ros::NodeHandle nh
 ):
-    safe(UNITREE_LEGGED_SDK::LeggedType::A1),
+    safe(UNITREE_LEGGED_SDK::LeggedType::Go1),
     // udp(8091, "192.168.123.161", 8082, sizeof(UNITREE_LEGGED_SDK::HighCmd), sizeof(UNITREE_LEGGED_SDK::HighState)),
-    udp(level),
+    udp(level, 8080, "192.168.123.10", 8007),
     robot_namespace(robot_namespace),
     udp_duration(udp_duration),
     ctrl_level(level),
@@ -415,17 +349,7 @@ RosUdpHandler::RosUdpHandler(
     loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this)),
     loop_udp_translate("udp_translate", udp_duration, boost::bind(&RosUdpHandler::udp_translate, this))
 {
-    // if (level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    // {
-    //     ROS_INFO_ONCE("Setting up UDP with HIGHLEVEL control");
-    //     this->udp = UNITREE_LEGGED_SDK::UDP(
-    //         8080,
-    //         "192.168.123.161",
-    //         8082,
-    //         sizeof(UNITREE_LEGGED_SDK::HighCmd),
-    //         sizeof(UNITREE_LEGGED_SDK::HighState)
-    //     );
-    // } else if (level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    // if (level == UNITREE_LEGGED_SDK::LOWLEVEL)
     // {
     //     ROS_INFO_ONCE("Setting up UDP with LOWLEVEL control");
     //     this->udp = UNITREE_LEGGED_SDK::UDP(level);

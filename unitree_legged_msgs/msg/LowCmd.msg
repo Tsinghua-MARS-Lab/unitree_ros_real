@@ -1,12 +1,12 @@
-
+uint8[2] head
 uint8 levelFlag
-uint16 commVersion
+uint8 frameReserve
 
-uint16 robotID
-uint32 SN
-uint8 bandWidth
+uint32[2] SN
+uint32[2] version
+uint16 bandWidth
 MotorCmd[20] motorCmd
-LED[4] led
+BmsCmd bms
 WirelessRemote wirelessRemote
 uint32 reserve
 

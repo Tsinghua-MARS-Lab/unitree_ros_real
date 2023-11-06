@@ -2,10 +2,11 @@
 #ifndef _UNITREE_CONVERT_H_
 #define _UNITREE_CONVERT_H_
 
+#include <unitree_legged_msgs/Cartesian.h>
 #include <unitree_legged_msgs/LowCmd.h>
 #include <unitree_legged_msgs/LowState.h>
-#include <unitree_legged_msgs/HighCmd.h>
-#include <unitree_legged_msgs/HighState.h>
+// #include <unitree_legged_msgs/HighCmd.h>
+// #include <unitree_legged_msgs/HighState.h>
 #include <unitree_legged_msgs/MotorCmd.h>
 #include <unitree_legged_msgs/MotorState.h>
 #include <unitree_legged_msgs/IMU.h>
@@ -14,6 +15,45 @@
 
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
+
+UNITREE_LEGGED_SDK::BmsCmd rosMsg2Cmd(const unitree_legged_msgs::BmsCmd &msg)
+{
+    UNITREE_LEGGED_SDK::BmsCmd cmd;
+    
+    // cmd.off = msg.off; // TODO: check if this is correct
+    for (int i = 0; i < 3; i++) cmd.reserve[i] = msg.reserve[i];
+
+    return cmd;
+}
+
+unitree_legged_msgs::BmsCmd Cmd2rosMsg(const UNITREE_LEGGED_SDK::BmsCmd *cmd)
+{
+    unitree_legged_msgs::BmsCmd ros_msg;
+
+    ros_msg.off = cmd->off;
+    for (int i = 0; i < 3; i++) ros_msg.reserve[i] = cmd->reserve[i];
+
+    return ros_msg;
+}
+
+unitree_legged_msgs::BmsState state2rosMsg(UNITREE_LEGGED_SDK::BmsState &state)
+{
+    unitree_legged_msgs::BmsState ros_msg;
+
+    ros_msg.version_h = state.version_h;
+    ros_msg.version_l = state.version_l;
+    ros_msg.bms_status = state.bms_status;
+    ros_msg.SOC = state.SOC;
+    ros_msg.current = state.current;
+    ros_msg.cycle = state.cycle;
+    ros_msg.BQ_NTC[0] = state.BQ_NTC[0];
+    ros_msg.BQ_NTC[1] = state.BQ_NTC[1];
+    ros_msg.MCU_NTC[0] = state.MCU_NTC[0];
+    ros_msg.MCU_NTC[1] = state.MCU_NTC[1];
+    for (int i = 0; i < 10; i++) ros_msg.cell_vol[i] = state.cell_vol[i];
+
+    return ros_msg;
+}
 
 unitree_legged_msgs::Cartesian state2rosMsg(UNITREE_LEGGED_SDK::Cartesian &state)
 {
@@ -98,7 +138,7 @@ unitree_legged_msgs::MotorCmd Cmd2rosMsg(const UNITREE_LEGGED_SDK::MotorCmd* cmd
     return ros_msg;
 }
 
-unitree_legged_msgs::WirelessRemote Bytes2rosMsg(const uint8_t (&bytes)[40])
+unitree_legged_msgs::WirelessRemote Bytes2rosMsg(const std::array<uint8_t, 40> &bytes)
 {
     unitree_legged_msgs::WirelessRemote ros_msg;
 
@@ -126,16 +166,51 @@ unitree_legged_msgs::WirelessRemote Bytes2rosMsg(const uint8_t (&bytes)[40])
     ros_msg.btn.value = (bytes[3] << 8) | bytes[2];
 
     // 4 ~ 24 Bytes
-    memcpy(&ros_msg.lx, bytes + 4, 4);
-    memcpy(&ros_msg.rx, bytes + 8, 4);
-    memcpy(&ros_msg.ry, bytes + 12, 4);
-    memcpy(&ros_msg.L2, bytes + 16, 4);
-    memcpy(&ros_msg.ly, bytes + 20, 4);
+    // little endian
+    union {
+        float output;   // assumes sizeof(float) == sizeof(int)
+        uint32_t input;
+    } data;
+    data.input = (
+        (uint32_t)bytes[4] << 0 |
+        (uint32_t)bytes[5] << 8 |
+        (uint32_t)bytes[6] << 16 |
+        (uint32_t)bytes[7] << 24
+    );
+    ros_msg.lx = data.output;
+    data.input = (
+        (uint32_t)bytes[8] << 0 |
+        (uint32_t)bytes[9] << 8 |
+        (uint32_t)bytes[10] << 16 |
+        (uint32_t)bytes[11] << 24
+    );
+    ros_msg.rx = data.output;
+    data.input = (
+        (uint32_t)bytes[12] << 0 |
+        (uint32_t)bytes[13] << 8 |
+        (uint32_t)bytes[14] << 16 |
+        (uint32_t)bytes[15] << 24
+    );
+    ros_msg.ry = data.output;
+    data.input = (
+        (uint32_t)bytes[16] << 0 |
+        (uint32_t)bytes[17] << 8 |
+        (uint32_t)bytes[18] << 16 |
+        (uint32_t)bytes[19] << 24
+    );
+    ros_msg.L2 = data.output;
+    data.input = (
+        (uint32_t)bytes[20] << 0 |
+        (uint32_t)bytes[21] << 8 |
+        (uint32_t)bytes[22] << 16 |
+        (uint32_t)bytes[23] << 24
+    );
+    ros_msg.ly = data.output;
 
     return ros_msg;
 }
 
-void rosMsg2Bytes(uint8_t (&dst)[40], const unitree_legged_msgs::WirelessRemote &wireless_remote)
+void rosMsg2Bytes(std::array<uint8_t, 40> &dst, const unitree_legged_msgs::WirelessRemote &wireless_remote)
 {
     // 0, 1 Byte
     dst[0] = wireless_remote.head[0];
@@ -160,25 +235,55 @@ void rosMsg2Bytes(uint8_t (&dst)[40], const unitree_legged_msgs::WirelessRemote 
     dst[3] |= ((uint8_t)wireless_remote.btn.components.left << 7);
 
     // 4 ~ 24 Bytes
-    memcpy(dst + 4, &wireless_remote.lx, 4);
-    memcpy(dst + 8, &wireless_remote.rx, 4);
-    memcpy(dst + 12, &wireless_remote.ry, 4);
-    memcpy(dst + 16, &wireless_remote.L2, 4);
-    memcpy(dst + 20, &wireless_remote.ly, 4);
+    // little endian
+    union {
+        float input;   // assumes sizeof(float) == sizeof(int)
+        uint32_t output;
+    } data;
+    data.input = wireless_remote.lx;
+    dst[4] = ((uint8_t)data.output >> 0);
+    dst[5] = ((uint8_t)data.output >> 8);
+    dst[6] = ((uint8_t)data.output >> 16);
+    dst[7] = ((uint8_t)data.output >> 24);
+    data.input = wireless_remote.rx;
+    dst[8] = ((uint8_t)data.output >> 0);
+    dst[9] = ((uint8_t)data.output >> 8);
+    dst[10] = ((uint8_t)data.output >> 16);
+    dst[11] = ((uint8_t)data.output >> 24);
+    data.input = wireless_remote.ry;
+    dst[12] = ((uint8_t)data.output >> 0);
+    dst[13] = ((uint8_t)data.output >> 8);
+    dst[14] = ((uint8_t)data.output >> 16);
+    dst[15] = ((uint8_t)data.output >> 24);
+    data.input = wireless_remote.L2;
+    dst[16] = ((uint8_t)data.output >> 0);
+    dst[17] = ((uint8_t)data.output >> 8);
+    dst[18] = ((uint8_t)data.output >> 16);
+    dst[19] = ((uint8_t)data.output >> 24);
+    data.input = wireless_remote.ly;
+    dst[20] = ((uint8_t)data.output >> 0);
+    dst[21] = ((uint8_t)data.output >> 8);
+    dst[22] = ((uint8_t)data.output >> 16);
+    dst[23] = ((uint8_t)data.output >> 24);
 }
 
 unitree_legged_msgs::LowState state2rosMsg(UNITREE_LEGGED_SDK::LowState &state)
 {
     unitree_legged_msgs::LowState ros_msg;
 
+    ros_msg.head[0] = state.head[0];
+    ros_msg.head[1] = state.head[1];
     ros_msg.levelFlag = state.levelFlag;
-    ros_msg.commVersion = state.commVersion;
-    
-    ros_msg.robotID = state.robotID;
-    ros_msg.SN = state.SN;
+    ros_msg.frameReserve = state.frameReserve;
+
+    ros_msg.SN[0] = state.SN[0];
+    ros_msg.SN[1] = state.SN[1];
+    ros_msg.version[0] = state.version[0];
+    ros_msg.version[1] = state.version[1];
     ros_msg.bandWidth = state.bandWidth;
     ros_msg.imu = state2rosMsg(state.imu);
     for (int i(0); i < 20; i++) ros_msg.motorState[i] = state2rosMsg(state.motorState[i]);
+    ros_msg.bms = state2rosMsg(state.bms);    
     for (int i(0); i < 4; i++) ros_msg.footForce[i] = state.footForce[i];
     for (int i(0); i < 4; i++) ros_msg.footForceEst[i] = state.footForceEst[i];
     ros_msg.tick = state.tick;
@@ -194,19 +299,18 @@ UNITREE_LEGGED_SDK::LowCmd rosMsg2Cmd(const unitree_legged_msgs::LowCmd::ConstPt
 {
     UNITREE_LEGGED_SDK::LowCmd cmd;
 
+    cmd.head[0] = msg->head[0];
+    cmd.head[1] = msg->head[1];
     cmd.levelFlag = msg->levelFlag;
-    cmd.commVersion = msg->commVersion;
-    
-    cmd.robotID = msg->robotID;
-    cmd.SN = msg->SN;
+    cmd.frameReserve = msg->frameReserve;
+
+    cmd.SN[0] = msg->SN[0];
+    cmd.SN[1] = msg->SN[1];
+    cmd.version[0] = msg->version[0];
+    cmd.version[1] = msg->version[1];    
     cmd.bandWidth = msg->bandWidth;
     for (int i(0); i < 20; i++) cmd.motorCmd[i] = rosMsg2Cmd(msg->motorCmd[i]);
-    for (int i(0); i < 4; i++)
-    {
-        cmd.led[i].r = msg->led[i].r;
-        cmd.led[i].g = msg->led[i].g;
-        cmd.led[i].b = msg->led[i].b;
-    }
+    cmd.bms = rosMsg2Cmd(msg->bms);
     rosMsg2Bytes(cmd.wirelessRemote, msg->wirelessRemote);
     cmd.reserve = msg->reserve;
 
@@ -219,19 +323,18 @@ unitree_legged_msgs::LowCmd Cmd2rosMsg(const UNITREE_LEGGED_SDK::LowCmd *cmd)
 {
     unitree_legged_msgs::LowCmd ros_msg;
 
+    ros_msg.head[0] = cmd->head[0];
+    ros_msg.head[1] = cmd->head[1];
     ros_msg.levelFlag = cmd->levelFlag;
-    ros_msg.commVersion = cmd->commVersion;
-    
-    ros_msg.robotID = cmd->robotID;
-    ros_msg.SN = cmd->SN;
+    ros_msg.frameReserve = cmd->frameReserve;
+
+    ros_msg.SN[0] = cmd->SN[0];
+    ros_msg.SN[1] = cmd->SN[1];
+    ros_msg.version[0] = cmd->version[0];
+    ros_msg.version[1] = cmd->version[1];    
     ros_msg.bandWidth = cmd->bandWidth;
     for (int i(0); i < 20; i++) ros_msg.motorCmd[i] = Cmd2rosMsg(&cmd->motorCmd[i]);
-    for (int i(0); i < 4; i++)
-    {
-        ros_msg.led[i].r = cmd->led[i].r;
-        ros_msg.led[i].g = cmd->led[i].g;
-        ros_msg.led[i].b = cmd->led[i].b;
-    }
+    ros_msg.bms = Cmd2rosMsg(&cmd->bms);
     ros_msg.wirelessRemote = Bytes2rosMsg(cmd->wirelessRemote);
     ros_msg.reserve = cmd->reserve;
 
@@ -239,6 +342,8 @@ unitree_legged_msgs::LowCmd Cmd2rosMsg(const UNITREE_LEGGED_SDK::LowCmd *cmd)
 
     return ros_msg;
 }
+
+/* Disabling all HighLevel thingy...
 
 unitree_legged_msgs::HighState state2rosMsg(UNITREE_LEGGED_SDK::HighState &state)
 {
@@ -338,5 +443,7 @@ unitree_legged_msgs::HighCmd Cmd2rosMsg(const UNITREE_LEGGED_SDK::HighCmd* cmd)
 
     return ros_msg;
 }
+
+*/
 
 #endif
