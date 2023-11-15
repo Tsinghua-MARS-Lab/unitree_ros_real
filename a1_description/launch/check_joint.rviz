@@ -25,7 +25,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: Image
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -205,6 +205,56 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        a112138/FL_calf:
+          Value: true
+        a112138/FL_foot:
+          Value: true
+        a112138/FL_hip:
+          Value: true
+        a112138/FL_thigh:
+          Value: true
+        a112138/FL_thigh_shoulder:
+          Value: true
+        a112138/FR_calf:
+          Value: true
+        a112138/FR_foot:
+          Value: true
+        a112138/FR_hip:
+          Value: true
+        a112138/FR_thigh:
+          Value: true
+        a112138/FR_thigh_shoulder:
+          Value: true
+        a112138/RL_calf:
+          Value: true
+        a112138/RL_foot:
+          Value: true
+        a112138/RL_hip:
+          Value: true
+        a112138/RL_thigh:
+          Value: true
+        a112138/RL_thigh_shoulder:
+          Value: true
+        a112138/RR_calf:
+          Value: true
+        a112138/RR_foot:
+          Value: true
+        a112138/RR_hip:
+          Value: true
+        a112138/RR_thigh:
+          Value: true
+        a112138/RR_thigh_shoulder:
+          Value: true
+        a112138/base:
+          Value: true
+        a112138/camera_bottom_screw_frame:
+          Value: true
+        a112138/camera_link:
+          Value: true
+        a112138/imu_link:
+          Value: true
+        a112138/trunk:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 0.10000000149011612
       Name: TF
@@ -212,7 +262,41 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        a112138/base:
+          a112138/camera_bottom_screw_frame:
+            a112138/camera_link:
+              {}
+          a112138/trunk:
+            a112138/FL_hip:
+              a112138/FL_thigh:
+                a112138/FL_calf:
+                  a112138/FL_foot:
+                    {}
+              a112138/FL_thigh_shoulder:
+                {}
+            a112138/FR_hip:
+              a112138/FR_thigh:
+                a112138/FR_calf:
+                  a112138/FR_foot:
+                    {}
+              a112138/FR_thigh_shoulder:
+                {}
+            a112138/RL_hip:
+              a112138/RL_thigh:
+                a112138/RL_calf:
+                  a112138/RL_foot:
+                    {}
+              a112138/RL_thigh_shoulder:
+                {}
+            a112138/RR_hip:
+              a112138/RR_thigh:
+                a112138/RR_calf:
+                  a112138/RR_foot:
+                    {}
+              a112138/RR_thigh_shoulder:
+                {}
+            a112138/imu_link:
+              {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -259,7 +343,7 @@ Visualization Manager:
   Global Options:
     Background Color: 23; 23; 23
     Default Light: true
-    Fixed Frame: odom
+    Fixed Frame: a112138/base
     Frame Rate: 30
   Name: root
   Tools:
@@ -283,7 +367,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.557483434677124
+      Distance: 1.335046410560608
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -299,9 +383,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5247969031333923
+      Pitch: 0.1597968339920044
       Target Frame: <Fixed Frame>
-      Yaw: 2.8485982418060303
+      Yaw: 1.4535971879959106
     Saved: ~
 Window Geometry:
   Displays:

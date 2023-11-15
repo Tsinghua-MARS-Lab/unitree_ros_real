@@ -43,8 +43,10 @@ public:
     float roll_protect_limit; // if greater than 0., the program exits when abs(roll) of base is out of limit. The robot is probability to fall down.
     float R2_press_protect; // if true, the program exits when detecting the L2 button on the wirelessRemote is pressed.
     bool robot_safe = true; // if false, this program is shutting down. No code should be able to set this value to true.
+    int udp_recv_result = -1;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_send;
     UNITREE_LEGGED_SDK::LoopFunc loop_udp_recv;
+    UNITREE_LEGGED_SDK::LoopFunc loop_udp_translate;
     
     UNITREE_LEGGED_SDK::Safety safe;
     float position_protect_limit; // Please check safety.h, 0.0 is the least limit
@@ -80,6 +82,8 @@ protected:
     void udp_send();
     // Publish the message directly to ROS everytime in udp_recv().
     void udp_recv();
+    void udp_translate();
+    
     // Initialize the buffer for the use of setting only part of the cmd.
     void set_default_high_cmd();
     void set_default_low_cmd();

@@ -64,10 +64,43 @@ void RosUdpHandler::udp_start()
     this->loop_udp_recv.start();
     this->loop_udp_send.start();
     this->cmd_refresh_time = ros::Time::now();
+    this->loop_udp_translate.start();
 }
 
 void RosUdpHandler::udp_send()
 {
+    if (!this->dryrun)
+        this->udp.Send();
+}
+
+void RosUdpHandler::udp_recv()
+{
+    this->udp_recv_result = this->udp.Recv();
+}
+
+void RosUdpHandler::udp_translate()
+{
+    // Receive part
+    if (this->udp_recv_result < 0)
+    {
+        ROS_ERROR_DELAYED_THROTTLE(0.1, "udp_recv error: %i, message translate might lost once.", this->udp_recv_result);
+    }
+    else if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
+    {
+        this->udp.GetRecv(this->high_state_buffer);
+        this->high_state_publish();
+        if (!this->high_cmd_metadata_get) this->high_cmd_metadata_update();
+    }
+    else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
+    {
+        pthread_mutex_lock(&this->low_state_mutex);
+        this->udp.GetRecv(this->low_state_buffer);
+        pthread_mutex_unlock(&this->low_state_mutex);
+        this->low_state_publish();
+        if (!this->low_cmd_metadata_get) this->low_cmd_metadata_update();
+    }
+    
+    // Send part
     if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     {
         this->udp.SetSend(this->high_cmd_buffer);
@@ -100,37 +133,12 @@ void RosUdpHandler::udp_send()
         }
         this->udp.SetSend(this->low_cmd_buffer);
         pthread_mutex_unlock(&this->low_cmd_mutex);
-    }
-    if (!this->dryrun)
-        this->udp.Send();
-    if (!this->robot_safe)
-    {
-        ROS_FATAL("Robot unsafe, exit the program.");
-        ros::shutdown();
-    }
-}
-
-void RosUdpHandler::udp_recv()
-{
-    int recv_result = this->udp.Recv();
-    if (recv_result < 0)
-    {
-        ROS_ERROR_DELAYED_THROTTLE(1, "udp_recv error: %i", recv_result);
-        return;
-    }
-    if (this->ctrl_level == UNITREE_LEGGED_SDK::HIGHLEVEL)
-    {
-        this->udp.GetRecv(this->high_state_buffer);
-        this->high_state_publish();
-        if (!this->high_cmd_metadata_get) this->high_cmd_metadata_update();
-    }
-    else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
-    {
-        pthread_mutex_lock(&this->low_state_mutex);
-        this->udp.GetRecv(this->low_state_buffer);
-        pthread_mutex_unlock(&this->low_state_mutex);
-        this->low_state_publish();
-        if (!this->low_cmd_metadata_get) this->low_cmd_metadata_update();
+        if (!this->robot_safe)
+        {
+            ROS_FATAL("Robot unsafe, exit the program.");
+            if (!this->dryrun) this->udp.Send();
+            ros::shutdown();
+        }
     }
 }
 
@@ -346,11 +354,11 @@ void RosUdpHandler::publisher_init()
     else if (this->ctrl_level == UNITREE_LEGGED_SDK::LOWLEVEL)
     {
         this->state_publisher = this->ros_handle.advertise<unitree_legged_msgs::LowState>(
-            "low_state", 1
+            "low_state", 10
         );
         if (this->cmd_check)
             this->cmd_checker = this->ros_handle.advertise<unitree_legged_msgs::LowCmd>(
-                "low_cmd_check", 1
+                "low_cmd_check", 10
             );
     }
 }
@@ -404,7 +412,8 @@ RosUdpHandler::RosUdpHandler(
     ctrl_level(level),
     ros_handle(nh),
     loop_udp_send("udp_send", udp_duration, 3, boost::bind(&RosUdpHandler::udp_send, this)),
-    loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this))
+    loop_udp_recv("udp_recv", udp_duration, 3, boost::bind(&RosUdpHandler::udp_recv, this)),
+    loop_udp_translate("udp_translate", udp_duration, boost::bind(&RosUdpHandler::udp_translate, this))
 {
     // if (level == UNITREE_LEGGED_SDK::HIGHLEVEL)
     // {
